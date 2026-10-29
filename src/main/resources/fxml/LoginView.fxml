@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<StackPane alignment="CENTER" styleClass="login-root"
+           xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="com.nhom5.eventticket.ui.LoginController">
+  <VBox prefWidth="440" maxWidth="440" maxHeight="-Infinity" spacing="16" styleClass="login-card">
+    <Label text="ET" styleClass="login-logo" />
+    <VBox spacing="4">
+      <Label text="Event &amp; Ticketing" styleClass="login-title" />
+      <Label text="Đăng nhập để tiếp tục sử dụng ứng dụng." wrapText="true" styleClass="muted-label" />
+    </VBox>
+    <VBox spacing="8">
+      <Label text="Tên đăng nhập" styleClass="input-label" />
+      <TextField fx:id="usernameField" promptText="Tên đăng nhập" />
+      <Label text="Mật khẩu" styleClass="input-label" />
+      <PasswordField fx:id="passwordField" promptText="Mật khẩu" onAction="#login" />
+    </VBox>
+    <Button text="Đăng nhập" onAction="#login" defaultButton="true" styleClass="primary-button" maxWidth="Infinity" />
+    <Label fx:id="statusLabel" text="" wrapText="true" styleClass="form-error" />
+    <Button text="Chưa có tài khoản? Đăng ký" onAction="#showRegister" styleClass="link-button" />
+    <VBox fx:id="registerBox" spacing="8" visible="false" managed="false">
+      <Separator />
+      <Label text="Tạo tài khoản khách hàng" styleClass="panel-title" />
+      <Label text="Họ và tên" styleClass="input-label" />
+      <TextField fx:id="fullNameField" promptText="Họ và tên" />
+      <Label text="Email" styleClass="input-label" />
+      <TextField fx:id="emailField" promptText="Email" />
+      <Button text="Đăng ký và vào ứng dụng" onAction="#register" styleClass="secondary-button" maxWidth="Infinity" />
+    </VBox>
+    <Label text="Tài khoản dùng thử: customer / 123456 hoặc admin / 123456" wrapText="true" styleClass="hint-label" />
+  </VBox>
+</StackPane>

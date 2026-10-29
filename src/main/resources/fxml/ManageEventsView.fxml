@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<ScrollPane fitToWidth="true" hbarPolicy="NEVER" styleClass="transparent-scroll"
+            xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.nhom5.eventticket.ui.ManageEventController">
+ <content>
+  <VBox spacing="16" styleClass="view">
+    <VBox spacing="5">
+      <Label text="QUẢN LÝ SỰ KIỆN" styleClass="section-label"/>
+      <Label text="Sự kiện và loại vé" styleClass="heading"/>
+      <Label text="Thêm, sửa, xóa sự kiện. Cập nhật giá và số lượng vé còn lại." wrapText="true" styleClass="muted-label"/>
+    </VBox>
+    <TableView fx:id="eventTable" prefHeight="220">
+      <columns>
+        <TableColumn fx:id="eventIdCol" text="Mã" prefWidth="90"/>
+        <TableColumn fx:id="eventNameCol" text="Tên sự kiện" prefWidth="240"/>
+        <TableColumn fx:id="locationCol" text="Địa điểm" prefWidth="160"/>
+        <TableColumn fx:id="timeCol" text="Thời gian" prefWidth="160"/>
+      </columns>
+    </TableView>
+    <VBox spacing="10" styleClass="panel">
+      <Label text="Thông tin sự kiện" styleClass="panel-title"/>
+      <Label text="Tên sự kiện" styleClass="input-label"/>
+      <TextField fx:id="nameField" promptText="Tên sự kiện"/>
+      <Label text="Mô tả" styleClass="input-label"/>
+      <TextArea fx:id="descriptionField" promptText="Mô tả ngắn" prefRowCount="2"/>
+      <Label text="Địa điểm" styleClass="input-label"/>
+      <TextField fx:id="locationField" promptText="Địa điểm"/>
+      <Label text="Ngày tổ chức" styleClass="input-label"/>
+      <DatePicker fx:id="datePicker"/>
+      <HBox spacing="10">
+        <Button text="Thêm sự kiện" onAction="#addEvent" styleClass="primary-button"/>
+        <Button text="Lưu sửa" onAction="#saveEvent" styleClass="secondary-button"/>
+        <Button text="Xóa" onAction="#deleteEvent" styleClass="secondary-button"/>
+      </HBox>
+    </VBox>
+    <VBox spacing="10" styleClass="panel">
+      <Label text="Loại vé của sự kiện đang chọn" styleClass="panel-title"/>
+      <ListView fx:id="ticketList" prefHeight="120"/>
+      <Label text="Loại vé" styleClass="input-label"/>
+      <ComboBox fx:id="typeBox" maxWidth="Infinity"/>
+      <Label text="Giá vé (VND)" styleClass="input-label"/>
+      <TextField fx:id="priceField" promptText="Ví dụ: 150000"/>
+      <Label text="Số lượng vé" styleClass="input-label"/>
+      <TextField fx:id="quantityField" promptText="Ví dụ: 100"/>
+      <Label fx:id="stockLabel" text="" styleClass="hint-label"/>
+      <HBox spacing="10">
+        <Button text="Thêm loại vé" onAction="#addTicketType" styleClass="primary-button"/>
+        <Button text="Cập nhật loại vé" onAction="#updateTicketType" styleClass="secondary-button"/>
+      </HBox>
+    </VBox>
+  </VBox>
+ </content>
+</ScrollPane>

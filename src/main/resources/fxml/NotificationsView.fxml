@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<BorderPane styleClass="view" xmlns="http://javafx.com/javafx/21"
+ xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.nhom5.eventticket.ui.NotificationController">
+ <top><VBox spacing="8">
+    <Label text="THÔNG BÁO" styleClass="section-label"/>
+    <Label text="Thông báo của bạn" styleClass="heading"/>
+    <Label text="Các cập nhật liên quan đến vé đã đặt." styleClass="muted-label"/>
+    <Button text="Làm mới" onAction="#refresh" styleClass="secondary-button"/>
+ </VBox></top>
+ <center><ListView fx:id="notificationsList"/></center>
+</BorderPane>

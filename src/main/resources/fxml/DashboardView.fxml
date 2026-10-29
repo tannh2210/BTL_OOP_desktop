@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<ScrollPane fitToWidth="true" hbarPolicy="NEVER" styleClass="transparent-scroll"
+            xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.nhom5.eventticket.ui.DashboardController">
+ <content><VBox spacing="20" styleClass="view">
+   <VBox spacing="10" styleClass="hero">
+     <Label text="EVENT &amp; TICKETING" styleClass="hero-eyebrow" />
+     <Label text="Event &amp; Ticketing" styleClass="hero-title" wrapText="true" />
+     <Label text="Tìm sự kiện phù hợp, chọn loại vé và quản lý các lần đặt chỗ tại một nơi." styleClass="hero-description" wrapText="true" />
+     <HBox spacing="10">
+       <Button fx:id="viewEventsButton" text="Xem sự kiện" onAction="#goEvents" styleClass="primary-button" />
+       <Button fx:id="bookButton" text="Đặt vé ngay" onAction="#goBooking" styleClass="secondary-button" />
+     </HBox>
+   </VBox>
+   <Label text="TỔNG QUAN" styleClass="section-label" />
+   <HBox spacing="14">
+     <VBox spacing="8" styleClass="stat-card" HBox.hgrow="ALWAYS">
+       <Label text="Sự kiện nổi bật" styleClass="stat-caption" /><Label fx:id="eventCount" text="0" styleClass="stat-number" /><Label text="Đang được giới thiệu" styleClass="stat-foot" />
+     </VBox>
+     <VBox spacing="8" styleClass="stat-card" HBox.hgrow="ALWAYS">
+       <Label text="Lượt đặt vé" styleClass="stat-caption" /><Label fx:id="bookingCount" text="0" styleClass="stat-number" /><Label text="Đã được ghi nhận" styleClass="stat-foot" />
+     </VBox>
+     <VBox spacing="8" styleClass="stat-card" HBox.hgrow="ALWAYS">
+       <Label text="Vé phát hành" styleClass="stat-caption" /><Label fx:id="ticketCount" text="0" styleClass="stat-number" /><Label text="Trong hệ thống" styleClass="stat-foot" />
+     </VBox>
+   </HBox>
+   <VBox spacing="12" styleClass="panel">
+     <Label text="Sự kiện sắp tới" styleClass="panel-title" />
+     <ListView fx:id="upcomingList" prefHeight="160" />
+     <Button text="Xem tất cả sự kiện" onAction="#goEvents" styleClass="link-button" />
+   </VBox>
+ </VBox></content>
+</ScrollPane>

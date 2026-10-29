@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<VBox spacing="18" styleClass="view" xmlns="http://javafx.com/javafx/21"
+ xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.nhom5.eventticket.ui.StatisticsController">
+  <VBox spacing="5"><Label text="THỐNG KÊ" styleClass="section-label"/>
+    <Label text="Tổng quan hoạt động" styleClass="heading"/>
+    <Label text="Thông tin tổng hợp từ các sự kiện và lượt đặt vé." styleClass="muted-label"/>
+  </VBox>
+  <HBox spacing="14">
+    <VBox spacing="8" styleClass="stat-card" HBox.hgrow="ALWAYS"><Label text="Sự kiện" styleClass="stat-caption"/><Label fx:id="events" text="0" styleClass="stat-number"/></VBox>
+    <VBox spacing="8" styleClass="stat-card" HBox.hgrow="ALWAYS"><Label text="Booking" styleClass="stat-caption"/><Label fx:id="bookings" text="0" styleClass="stat-number"/></VBox>
+    <VBox spacing="8" styleClass="stat-card" HBox.hgrow="ALWAYS"><Label text="Vé đã đặt" styleClass="stat-caption"/><Label fx:id="tickets" text="0" styleClass="stat-number"/></VBox>
+  </HBox>
+  <VBox spacing="10" styleClass="panel">
+    <Label text="Doanh thu tạm tính" styleClass="panel-title"/>
+    <Label fx:id="revenue" text="0 VND" styleClass="price-label"/>
+    <Label text="Tính theo booking đang có trạng thái CONFIRMED; không bao gồm booking đã hủy." styleClass="hint-label" wrapText="true"/>
+  </VBox>
+</VBox>

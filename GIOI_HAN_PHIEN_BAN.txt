@@ -1,0 +1,13 @@
+Event & Ticketing System - JavaFX cơ bản
+
+Hoạt động: màn hình desktop, xem sự kiện, đăng nhập/đăng ký đơn giản, đặt vé,
+lịch sử vé, hủy vé, check-in mã vé, thống kê và thông báo ở mức minh họa.
+
+Chưa hoàn thiện: cơ sở dữ liệu, thanh toán, QR, cập nhật sự kiện đầy đủ,
+Observer Pattern, phân quyền bảo mật và kiểm thử toàn diện.
+
+Tài khoản mẫu:
+  customer / 123456
+  admin    / 123456
+
+Khởi chạy: nhấp đúp run.bat (cần Internet lần đầu).

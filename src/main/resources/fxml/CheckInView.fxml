@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<ScrollPane fitToWidth="true" hbarPolicy="NEVER" styleClass="transparent-scroll"
+ xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+ fx:controller="com.nhom5.eventticket.ui.CheckInController">
+ <content><VBox spacing="18" styleClass="view">
+  <VBox spacing="5"><Label text="CHECK-IN" styleClass="section-label"/>
+    <Label text="Kiểm tra vé tham dự" styleClass="heading"/>
+    <Label text="Nhập mã vé của khách để xác nhận khi đến sự kiện." styleClass="muted-label"/>
+  </VBox>
+  <VBox spacing="14" styleClass="panel">
+    <Label text="Mã vé" styleClass="input-label"/>
+    <TextField fx:id="ticketCodeField" promptText="Ví dụ: TKT-XXXXXXXX"/>
+    <Button text="Xác nhận check-in" onAction="#checkIn" styleClass="primary-button"/>
+    <Label fx:id="resultLabel" text="" styleClass="hint-label" wrapText="true"/>
+  </VBox>
+ </VBox></content>
+</ScrollPane>

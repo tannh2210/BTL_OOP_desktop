@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.nhom5.eventticket.ui.ShellController" styleClass="shell">
+  <left>
+    <VBox prefWidth="248" spacing="10" styleClass="sidebar">
+      <Label text="ET /" styleClass="logo" />
+      <Label text="EVENT &amp; TICKETING" styleClass="brand" />
+      <Label text="Khám phá • Đặt vé • Trải nghiệm" styleClass="brand-sub" />
+      <Separator />
+      <Label text="KHÁM PHÁ" styleClass="nav-caption" />
+      <Button text="⌂   Trang chủ" onAction="#dashboard" styleClass="nav-button" maxWidth="Infinity" />
+      <Button fx:id="eventsButton" text="▦   Danh sách sự kiện" onAction="#events" styleClass="nav-button" maxWidth="Infinity" />
+      <Button fx:id="bookingsButton" text="▤   Đặt vé" onAction="#bookings" styleClass="nav-button" maxWidth="Infinity" />
+      <Button text="♙   Tài khoản" onAction="#accounts" styleClass="nav-button" maxWidth="Infinity" />
+      <Button text="◉   Thông báo" onAction="#notifications" styleClass="nav-button" maxWidth="Infinity" />
+      <VBox fx:id="adminSection" spacing="10">
+        <Separator />
+        <Label text="QUẢN LÝ" styleClass="nav-caption" />
+        <Button text="✓   Check-in" onAction="#checkIns" styleClass="nav-button" maxWidth="Infinity" />
+        <Button text="▥   Thống kê" onAction="#statistics" styleClass="nav-button" maxWidth="Infinity" />
+      </VBox>
+      <Region VBox.vgrow="ALWAYS" />
+      <Button text="Đăng xuất" onAction="#logout" styleClass="nav-button" maxWidth="Infinity" />
+      <Label text="EVENT &amp; TICKETING" styleClass="side-foot-title" />
+      <Label text="Ứng dụng quản lý sự kiện và đặt vé." wrapText="true" styleClass="side-foot" />
+    </VBox>
+  </left>
+  <center>
+    <VBox styleClass="page-shell">
+      <HBox spacing="18" alignment="CENTER_LEFT" styleClass="topbar">
+        <VBox spacing="4">
+          <Label fx:id="pageTitle" text="Trang chủ" styleClass="page-title" />
+          <Label fx:id="pageSubtitle" text="Khám phá sự kiện sắp diễn ra" styleClass="page-subtitle" />
+        </VBox>
+        <Region HBox.hgrow="ALWAYS" />
+        <Label fx:id="sessionLabel" text="" styleClass="account-chip" />
+      </HBox>
+      <StackPane fx:id="contentArea" VBox.vgrow="ALWAYS" styleClass="content" />
+      <HBox alignment="CENTER_RIGHT" styleClass="footer">
+        <Label text="Event &amp; Ticketing • Ứng dụng dành cho máy tính" styleClass="footer-text" />
+      </HBox>
+    </VBox>
+  </center>
+</BorderPane>
