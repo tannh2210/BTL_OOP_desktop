@@ -1,80 +1,198 @@
 package com.nhom5.eventticket.ui;
+
 import com.nhom5.eventticket.AppContext;
 import com.nhom5.eventticket.model.*;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
+import javafx.scene.layout.HBox;
 import javafx.util.StringConverter;
+
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+
 public class BookingController implements ScreenController {
     @FXML private ComboBox<Event> eventBox;
+    @FXML private ComboBox<Event> filterEventBox;
     @FXML private ComboBox<TicketType> typeBox;
     @FXML private Spinner<Integer> quantitySpinner;
     @FXML private Label availabilityLabel;
     @FXML private Label totalLabel;
+    @FXML private Label formHeading;
+    @FXML private Label historyHeading;
+    @FXML private Label policyLabel;
+    @FXML private Button cancelButton;
+    @FXML private HBox bookingActions;
     @FXML private ListView<String> bookingList;
+
     private AppContext context;
-    private final List<Booking> rows=new ArrayList<>();
-    @Override public void init(AppContext context,Navigator navigator) {
-        this.context=context;
-        eventBox.setConverter(new StringConverter<>() {
-            public String toString(Event e) {return e==null?"":e.getName()+" ("+e.getEventId()+")";}
-            public Event fromString(String s) {return null;}
-        });
+    private final List<Booking> rows = new ArrayList<>();
+    private boolean admin;
+    private int quantityMaximum = 10;
+    private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+
+    @Override public void init(AppContext context, Navigator navigator) {
+        this.context = context;
+        admin = context.currentUser() instanceof Admin;
+        eventBox.setConverter(eventConverter());
+        filterEventBox.setConverter(eventConverter());
         typeBox.setConverter(new StringConverter<>() {
-            public String toString(TicketType t) {return t==null?"":t.getName()+" • "+t.getPrice().toPlainString()+" VND";}
-            public TicketType fromString(String s) {return null;}
+            @Override public String toString(TicketType type) { return type == null ? "" : type.getName() + " • " + type.getPrice().toPlainString() + " VND"; }
+            @Override public TicketType fromString(String value) { return null; }
         });
-        quantitySpinner.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1,10,1));
-        eventBox.getItems().setAll(context.events().listEvents());
-        eventBox.valueProperty().addListener((obs,oldV,v)->{
-            typeBox.getItems().clear();if(v!=null)typeBox.getItems().setAll(v.getTicketTypes());
-            typeBox.getSelectionModel().selectFirst();updateQuote();
+        eventBox.getItems().setAll(context.events().listEvents().stream().filter(BookingController::isBookable).toList());
+        filterEventBox.getItems().setAll(context.events().listEvents());
+        filterEventBox.setPromptText("Tất cả sự kiện");
+        quantitySpinner.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 10, 1));
+        bookingList.setCellFactory(view -> new ListCell<>() {
+            private final Label text = new Label();
+            { text.setWrapText(true); text.setMaxWidth(Double.MAX_VALUE); text.prefWidthProperty().bind(widthProperty().subtract(28)); }
+            @Override protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) { setGraphic(null); setText(null); }
+                else { text.setText(item); setGraphic(text); }
+            }
         });
-        typeBox.valueProperty().addListener((obs,oldV,v)->updateQuote());
-        quantitySpinner.valueProperty().addListener((obs,oldV,v)->updateQuote());
-        eventBox.getSelectionModel().selectFirst();refreshHistory();
+        eventBox.valueProperty().addListener((obs, oldValue, value) -> loadTicketTypes(value));
+        typeBox.valueProperty().addListener((obs, oldValue, value) -> updateQuote());
+        quantitySpinner.valueProperty().addListener((obs, oldValue, value) -> updateQuote());
+        filterEventBox.valueProperty().addListener((obs, oldValue, value) -> refreshHistory());
+        bookingList.getSelectionModel().selectedIndexProperty().addListener((obs, oldValue, value) -> updateCancelButton());
+
+        Event passedEvent = navigator.consumePendingEvent();
+        if (passedEvent != null && eventBox.getItems().stream().anyMatch(e -> e.getEventId().equals(passedEvent.getEventId()))) {
+            eventBox.getSelectionModel().select(eventBox.getItems().stream().filter(e -> e.getEventId().equals(passedEvent.getEventId())).findFirst().orElse(null));
+        } else if (!eventBox.getItems().isEmpty()) {
+            eventBox.getSelectionModel().selectFirst();
+        }
+        if (admin) {
+            formHeading.setText("Quản lý booking toàn hệ thống");
+            historyHeading.setText("Danh sách booking");
+            policyLabel.setText("Lọc theo sự kiện. Chỉ booking CONFIRMED có thể hủy trước giờ bắt đầu; booking có vé đã check-in không thể hủy.");
+            bookingActions.setVisible(false); bookingActions.setManaged(false);
+            eventBox.setVisible(false); eventBox.setManaged(false);
+            typeBox.setVisible(false); typeBox.setManaged(false);
+            quantitySpinner.setVisible(false); quantitySpinner.setManaged(false);
+            availabilityLabel.setVisible(false); availabilityLabel.setManaged(false);
+            totalLabel.setVisible(false); totalLabel.setManaged(false);
+            cancelButton.setText("Hủy booking đã chọn");
+        } else {
+            formHeading.setText("Thông tin đặt vé");
+            historyHeading.setText("Lịch sử đặt vé");
+            policyLabel.setText("Có thể hủy trước giờ bắt đầu sự kiện. Nếu một vé đã check-in, toàn bộ booking không thể hủy.");
+            filterEventBox.setVisible(false); filterEventBox.setManaged(false);
+        }
+        refreshHistory();
+        updateCancelButton();
     }
+
+    private StringConverter<Event> eventConverter() {
+        return new StringConverter<>() {
+            @Override public String toString(Event event) { return event == null ? "" : event.getName() + " (" + event.getEventId() + ")"; }
+            @Override public Event fromString(String value) { return null; }
+        };
+    }
+
+    private static boolean isBookable(Event event) {
+        return "OPEN".equals(event.getStatus()) && event.getStartTime().isAfter(LocalDateTime.now())
+                && event.getTicketTypes().stream().anyMatch(TicketType::isAvailable);
+    }
+
+    private void loadTicketTypes(Event event) {
+        typeBox.getItems().clear();
+        if (event != null) typeBox.getItems().setAll(event.getTicketTypes().stream().filter(TicketType::isAvailable).toList());
+        if (!typeBox.getItems().isEmpty()) typeBox.getSelectionModel().selectFirst();
+        else setQuantityMaximum(1);
+        updateQuote();
+    }
+
+    private void setQuantityMaximum(int available) {
+        int max = Math.max(1, Math.min(10, available));
+        int value = quantitySpinner.getValue() == null ? 1 : Math.min(quantitySpinner.getValue(), max);
+        if (max != quantityMaximum) {
+            quantityMaximum = max;
+            quantitySpinner.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, max, value));
+        } else if (quantitySpinner.getValue() > max) {
+            quantitySpinner.getValueFactory().setValue(max);
+        }
+    }
+
     private void updateQuote() {
-        TicketType type=typeBox.getValue();
-        if(type==null){availabilityLabel.setText("Hãy chọn hạng vé.");totalLabel.setText("0 VND");return;}
+        TicketType type = typeBox.getValue();
+        if (type == null) {
+            availabilityLabel.setText("Không còn vé phù hợp."); totalLabel.setText("0 VND");
+            setQuantityMaximum(1);
+            return;
+        }
+        setQuantityMaximum(type.getAvailableQuantity());
         availabilityLabel.setText("Còn " + type.getAvailableQuantity() + " vé");
-        totalLabel.setText(type.getPrice().multiply(BigDecimal.valueOf(quantitySpinner.getValue())).toPlainString()+" VND");
+        totalLabel.setText(type.getPrice().multiply(BigDecimal.valueOf(quantitySpinner.getValue())).toPlainString() + " VND");
     }
+
     @FXML private void placeBooking() {
-        if (!(context.currentUser() instanceof Customer customer)) {
-            UiAlerts.error("Chưa đăng nhập",new IllegalArgumentException("Hãy đăng nhập tài khoản khách hàng trước khi đặt vé."));return;
+        if (!(context.currentUser() instanceof Customer customer)) return;
+        if (eventBox.getValue() == null || typeBox.getValue() == null) {
+            UiAlerts.error("Thiếu lựa chọn", new IllegalArgumentException("Chọn sự kiện và loại vé.")); return;
         }
-        if(eventBox.getValue()==null ||typeBox.getValue()==null){UiAlerts.error("Thiếu lựa chọn",new IllegalArgumentException("Chọn sự kiện và loại vé."));return;}
         try {
-            Booking result=context.bookings().bookTicket(customer.getUserId(),eventBox.getValue().getEventId(),
-                      typeBox.getValue().getTicketTypeId(),quantitySpinner.getValue());
-            String codes=String.join(", ",result.getTickets().stream().map(Ticket::getTicketCode).toList());
-            UiAlerts.success("Đặt vé thành công!\nMã booking: " + result.getBookingId() + "\nMã vé: " + codes);
-            updateQuote();refreshHistory();
-        } catch(RuntimeException ex){UiAlerts.error("Đặt vé thất bại",ex);}
+            Booking result = context.bookings().bookTicket(customer.getUserId(), eventBox.getValue().getEventId(),
+                    typeBox.getValue().getTicketTypeId(), quantitySpinner.getValue());
+            UiAlerts.success("Đặt vé thành công!\nMã booking: " + result.getBookingId() + "\nMã vé: "
+                    + String.join(", ", result.getTickets().stream().map(Ticket::getTicketCode).toList()));
+            loadTicketTypes(eventBox.getValue()); refreshHistory();
+        } catch (RuntimeException ex) { UiAlerts.error("Đặt vé thất bại", ex); }
     }
-    @FXML private void viewHistory() {refreshHistory();}
+
+    @FXML private void viewHistory() { refreshHistory(); }
+
     private void refreshHistory() {
-        rows.clear();bookingList.getItems().clear();
-        if (!(context.currentUser() instanceof Customer user)) {
-            bookingList.getItems().add("Đăng nhập tài khoản khách hàng để xem vé của bạn.");return;
+        rows.clear(); bookingList.getItems().clear();
+        User current = context.currentUser();
+        if (admin) rows.addAll(context.bookings().getAllBookings(current.getUserId()));
+        else if (current instanceof Customer customer) rows.addAll(context.bookings().getBookingHistory(customer.getUserId()));
+        Event filter = filterEventBox.getValue();
+        for (Booking booking : rows) {
+            if (filter != null && !filter.getEventId().equals(booking.getEvent().getEventId())) continue;
+            String codes = String.join(", ", booking.getTickets().stream().map(Ticket::getTicketCode).toList());
+            bookingList.getItems().add(booking.getBookingId() + "  •  " + booking.getCustomer().getFullName()
+                    + "  •  " + booking.getEvent().getName() + "  •  " + booking.getStatus() + "\n"
+                    + "Thời gian: " + booking.getBookingTime().format(TIME) + "  •  Vé: " + codes);
         }
-        rows.addAll(context.bookings().getBookingHistory(user.getUserId()));
-        for(Booking b:rows){
-            String codes=String.join(", ",b.getTickets().stream().map(Ticket::getTicketCode).toList());
-            bookingList.getItems().add(b.getBookingId()+"  •  "+b.getEvent().getName()+"  •  "+b.getStatus()+"\nMã vé: "+codes);
-        }
-        if(rows.isEmpty())bookingList.getItems().add("Bạn chưa đặt vé nào.");
+        if (bookingList.getItems().isEmpty()) bookingList.getItems().add(admin ? "Không có booking phù hợp." : "Bạn chưa đặt vé nào.");
+        updateCancelButton();
     }
+
+    private void updateCancelButton() {
+        int index = bookingList.getSelectionModel().getSelectedIndex();
+        if (index < 0 || index >= bookingList.getItems().size()) { cancelButton.setDisable(true); return; }
+        Booking booking = displayedRows().get(index);
+        cancelButton.setDisable(!"CONFIRMED".equals(booking.getStatus())
+                || !booking.getEvent().getStartTime().isAfter(LocalDateTime.now())
+                || booking.getTickets().stream().anyMatch(Ticket::isUsed));
+    }
+
+    private List<Booking> displayedRows() {
+        Event filter = admin ? filterEventBox.getValue() : null;
+        return rows.stream().filter(b -> filter == null || filter.getEventId().equals(b.getEvent().getEventId())).toList();
+    }
+
     @FXML private void cancelSelected() {
-        if (!(context.currentUser() instanceof Customer user)) {UiAlerts.error("Chưa đăng nhập",new IllegalArgumentException("Hãy đăng nhập trước."));return;}
-        int idx=bookingList.getSelectionModel().getSelectedIndex();
-        if(idx<0||idx>=rows.size()){UiAlerts.error("Chưa chọn booking",new IllegalArgumentException("Chọn một booking trong lịch sử."));return;}
-        Booking b=rows.get(idx);
-        try {context.bookings().cancelBooking(user.getUserId(),b.getBookingId());
-            UiAlerts.success("Đã hủy booking " + b.getBookingId());refreshHistory();updateQuote();
-        } catch(RuntimeException ex){UiAlerts.error("Không thể hủy booking",ex);}
+        int index = bookingList.getSelectionModel().getSelectedIndex();
+        List<Booking> visibleRows = displayedRows();
+        if (index < 0 || index >= visibleRows.size()) return;
+        Booking booking = visibleRows.get(index);
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
+                "Bạn có chắc muốn hủy booking " + booking.getBookingId() + "? Tất cả vé trong booking sẽ bị hủy.",
+                ButtonType.CANCEL, ButtonType.OK);
+        confirm.setTitle("Xác nhận hủy booking"); confirm.setHeaderText("Hủy booking");
+        if (confirm.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK) return;
+        try {
+            User current = context.currentUser();
+            if (admin) context.bookings().cancelBookingAsAdmin(current.getUserId(), booking.getBookingId());
+            else context.bookings().cancelBooking(current.getUserId(), booking.getBookingId());
+            UiAlerts.success("Đã hủy booking " + booking.getBookingId()); refreshHistory(); updateQuote();
+        } catch (RuntimeException ex) { UiAlerts.error("Không thể hủy booking", ex); }
     }
 }
