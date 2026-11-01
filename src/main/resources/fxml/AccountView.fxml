@@ -11,9 +11,15 @@
      <Label text="Phiên đăng nhập hiện tại của bạn." styleClass="muted-label" />
    </VBox>
    <VBox spacing="12" styleClass="panel" maxWidth="520">
-      <Label fx:id="currentUserLabel" text="" styleClass="panel-title" wrapText="true" />
+      <Label text="Họ và tên" styleClass="input-label" />
+      <TextField fx:id="fullNameField" promptText="Họ và tên" />
+      <Label text="Tên đăng nhập" styleClass="input-label" />
+      <Label fx:id="usernameLabel" text="" styleClass="muted-label" />
       <Label fx:id="roleLabel" text="" styleClass="muted-label" />
-      <Label fx:id="emailLabel" text="" styleClass="muted-label" />
+      <Label text="Email" styleClass="input-label" />
+      <TextField fx:id="emailField" promptText="Email" />
+      <Label fx:id="profileStatusLabel" text="" wrapText="true" />
+      <Button fx:id="saveButton" text="Lưu thay đổi" onAction="#saveProfile" styleClass="primary-button" />
       <Button text="Đăng xuất" onAction="#logout" styleClass="secondary-button" />
    </VBox>
  </VBox></content>
