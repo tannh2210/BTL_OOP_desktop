@@ -1,8 +1,19 @@
 package com.eventticketing.booking.dao;
 
-import com.eventticketing.booking.model.*;
-import java.sql.*;
-import java.util.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
+
+import com.eventticketing.booking.model.Booking;
+import com.eventticketing.booking.model.BookingStatus;
+import com.eventticketing.booking.model.EconomyTicket;
+import com.eventticketing.booking.model.StandardTicket;
+import com.eventticketing.booking.model.Ticket;
+import com.eventticketing.booking.model.VIPTicket;
 
 public class BookingDAO {
     public void insert(Connection c, Booking b) throws SQLException {
