@@ -9,8 +9,10 @@
     <VBox spacing="5">
       <Label text="QUẢN LÝ SỰ KIỆN" styleClass="section-label"/>
       <Label text="Sự kiện và loại vé" styleClass="heading"/>
-      <Label text="Thêm, sửa, xóa sự kiện. Cập nhật giá và số lượng vé còn lại." wrapText="true" styleClass="muted-label"/>
+      <Label text="Thêm, sửa, xóa sự kiện. Cập nhật giá và tổng số lượng vé." wrapText="true" styleClass="muted-label"/>
     </VBox>
+    <TextField fx:id="searchField" promptText="Tìm theo tên hoặc địa điểm..."/>
+    <Button text="Nhập sự kiện mới" onAction="#newEvent" styleClass="secondary-button"/>
     <TableView fx:id="eventTable" prefHeight="220">
       <columns>
         <TableColumn fx:id="eventIdCol" text="Mã" prefWidth="90"/>
@@ -29,6 +31,12 @@
       <TextField fx:id="locationField" promptText="Địa điểm"/>
       <Label text="Ngày tổ chức" styleClass="input-label"/>
       <DatePicker fx:id="datePicker"/>
+      <Label text="Giờ bắt đầu (HH:mm)" styleClass="input-label"/>
+      <TextField fx:id="startTimeField" text="19:00"/>
+      <Label text="Ngày kết thúc" styleClass="input-label"/>
+      <DatePicker fx:id="endDatePicker"/>
+      <Label text="Giờ kết thúc (HH:mm)" styleClass="input-label"/>
+      <TextField fx:id="endTimeField" text="22:00"/>
       <HBox spacing="10">
         <Button text="Thêm sự kiện" onAction="#addEvent" styleClass="primary-button"/>
         <Button text="Lưu sửa" onAction="#saveEvent" styleClass="secondary-button"/>
@@ -42,7 +50,7 @@
       <ComboBox fx:id="typeBox" maxWidth="Infinity"/>
       <Label text="Giá vé (VND)" styleClass="input-label"/>
       <TextField fx:id="priceField" promptText="Ví dụ: 150000"/>
-      <Label text="Số lượng vé" styleClass="input-label"/>
+      <Label text="Tổng số lượng vé (bao gồm vé đã đặt)" styleClass="input-label"/>
       <TextField fx:id="quantityField" promptText="Ví dụ: 100"/>
       <Label fx:id="stockLabel" text="" styleClass="hint-label"/>
       <HBox spacing="10">
