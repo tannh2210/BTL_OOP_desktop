@@ -16,10 +16,9 @@ public class Event {
     private final List<TicketType> ticketTypes = new ArrayList<>();
     public Event(String eventId, String name, String description, String location,
                  LocalDateTime startTime, LocalDateTime endTime, String status) {
-        this.eventId = java.util.Objects.requireNonNull(eventId);
-        this.name = java.util.Objects.requireNonNull(name);
-        this.description = java.util.Objects.requireNonNull(description);
-        this.location = java.util.Objects.requireNonNull(location);
+        if (eventId == null || eventId.isBlank()) throw new IllegalArgumentException("Mã sự kiện không được trống.");
+        this.eventId = eventId;
+        updateBasicInfo(name, description, location);
         this.startTime = java.util.Objects.requireNonNull(startTime);
         this.endTime = java.util.Objects.requireNonNull(endTime);
         if (!endTime.isAfter(startTime)) throw new IllegalArgumentException("endTime must be after startTime");
@@ -50,6 +49,8 @@ public class Event {
     public void addTicketType(TicketType type) {
         java.util.Objects.requireNonNull(type);
         if (findTicketType(type.getTicketTypeId()) != null) throw new IllegalArgumentException("Duplicate ticketTypeId");
+        if (ticketTypes.stream().anyMatch(t -> t.getName().equals(type.getName())))
+            throw new IllegalArgumentException("Sự kiện đã có loại vé " + type.getName() + ".");
         ticketTypes.add(type);
     }
     public TicketType findTicketType(String typeId) {

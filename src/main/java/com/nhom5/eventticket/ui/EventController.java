@@ -49,24 +49,32 @@ public class EventController implements ScreenController {
         statusCol.setCellValueFactory(d -> new ReadOnlyStringWrapper(d.getValue().getStatus()));
         eventData = FXCollections.observableArrayList(context.events().listEvents());
         list = new FilteredList<>(eventData);
-        eventTable.setItems(list);
+        var sorted = new javafx.collections.transformation.SortedList<>(list);
+        sorted.comparatorProperty().bind(eventTable.comparatorProperty());
+        eventTable.setItems(sorted);
+        eventTable.setPlaceholder(new Label("Không có sự kiện phù hợp."));
         searchField.textProperty().addListener((obs, oldV, value) -> {
             String key = value.trim().toLowerCase(Locale.ROOT);
             list.setPredicate(e -> e.getName().toLowerCase(Locale.ROOT).contains(key)
                     || e.getLocation().toLowerCase(Locale.ROOT).contains(key));
         });
         eventTable.getSelectionModel().selectedItemProperty().addListener((obs, oldV, value) -> showDetails(value));
+        showDetails(null);
         if (!list.isEmpty()) eventTable.getSelectionModel().selectFirst();
     }
 
     private void showDetails(Event event) {
+        bookButton.setDisable(event == null || !"OPEN".equals(event.getStatus())
+                || !event.getStartTime().isAfter(java.time.LocalDateTime.now())
+                || event.getTicketTypes().stream().noneMatch(t -> t.isAvailable()));
         if (event == null) {
             eventDetail.setText("Chọn một sự kiện.");
             ticketTypesList.getItems().clear();
             return;
         }
         eventDetail.setText(event.getName() + "\n" + event.getDescription() + "\n"
-                + event.getLocation() + " • " + event.getStartTime().format(FMT));
+                + event.getLocation() + " • " + event.getStartTime().format(FMT)
+                + " → " + event.getEndTime().format(FMT) + " • " + event.getStatus());
         ticketTypesList.getItems().setAll(event.getTicketTypes().stream()
                 .map(t -> t.getName() + "  •  " + t.getPrice().toPlainString() + " VND  •  Còn " + t.getAvailableQuantity())
                 .toList());

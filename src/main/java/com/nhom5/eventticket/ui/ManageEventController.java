@@ -30,6 +30,10 @@ public class ManageEventController implements ScreenController {
     @FXML private TableColumn<Event, String> eventNameCol;
     @FXML private TableColumn<Event, String> locationCol;
     @FXML private TableColumn<Event, String> timeCol;
+    @FXML private TextField searchField;
+    @FXML private TextField startTimeField;
+    @FXML private DatePicker endDatePicker;
+    @FXML private TextField endTimeField;
     @FXML private TextField nameField;
     @FXML private TextArea descriptionField;
     @FXML private TextField locationField;
@@ -53,6 +57,12 @@ public class ManageEventController implements ScreenController {
         timeCol.setCellValueFactory(d -> new ReadOnlyStringWrapper(FMT.format(d.getValue().getStartTime())));
         eventData = FXCollections.observableArrayList(context.events().listEvents());
         eventTable.setItems(eventData);
+        searchField.textProperty().addListener((obs, old, value) -> {
+            eventData.setAll(context.events().searchEvents(value));
+            eventTable.getSelectionModel().clearSelection();
+            showEvent(null);
+        });
+        eventTable.setPlaceholder(new Label("Không có sự kiện phù hợp."));
         typeBox.getItems().setAll("VIP", "STANDARD", "ECONOMY");
         typeBox.getSelectionModel().select("STANDARD");
         ticketList.setCellFactory(list -> new ListCell<>() {
@@ -70,15 +80,16 @@ public class ManageEventController implements ScreenController {
         eventTable.getSelectionModel().selectedItemProperty().addListener((obs, oldV, value) -> showEvent(value));
         ticketList.getSelectionModel().selectedItemProperty().addListener((obs, oldV, value) -> showTicketType(value));
         if (!eventData.isEmpty()) eventTable.getSelectionModel().selectFirst();
+        else showEvent(null);
     }
 
     @FXML
     private void addEvent() {
         Admin admin = requireAdmin();
-        if (admin == null || !hasDate()) return;
+        if (admin == null) return;
         try {
             Event created = context.events().createEventWithTicket(admin, nameField.getText(), descriptionField.getText(),
-                    locationField.getText(), datePicker.getValue().atTime(19, 0),
+                    locationField.getText(), schedule(datePicker, startTimeField), schedule(endDatePicker, endTimeField),
                     typeBox.getValue(), money(priceField.getText()), count(quantityField.getText()));
             reload(created.getEventId());
             UiAlerts.success("Đã thêm sự kiện.");
@@ -91,10 +102,10 @@ public class ManageEventController implements ScreenController {
     private void saveEvent() {
         Admin admin = requireAdmin();
         Event selected = selectedEvent();
-        if (admin == null || selected == null || !hasDate()) return;
+        if (admin == null || selected == null) return;
         try {
             context.events().updateEvent(admin, selected.getEventId(), nameField.getText(), descriptionField.getText(),
-                    locationField.getText(), datePicker.getValue().atTime(selected.getStartTime().toLocalTime()));
+                    locationField.getText(), schedule(datePicker, startTimeField), schedule(endDatePicker, endTimeField));
             reload(selected.getEventId());
             UiAlerts.success("Đã lưu sự kiện.");
         } catch (RuntimeException ex) {
@@ -158,6 +169,10 @@ public class ManageEventController implements ScreenController {
     private void showEvent(Event event) {
         ticketList.getItems().clear();
         if (event == null) {
+            nameField.clear(); descriptionField.clear(); locationField.clear();
+            datePicker.setValue(null); endDatePicker.setValue(null);
+            startTimeField.setText("19:00"); endTimeField.setText("22:00");
+            priceField.clear(); quantityField.clear(); typeBox.setValue("STANDARD");
             stockLabel.setText("");
             return;
         }
@@ -165,12 +180,17 @@ public class ManageEventController implements ScreenController {
         descriptionField.setText(event.getDescription());
         locationField.setText(event.getLocation());
         datePicker.setValue(event.getStartTime().toLocalDate());
+        startTimeField.setText(event.getStartTime().toLocalTime().toString());
+        endDatePicker.setValue(event.getEndTime().toLocalDate());
+        endTimeField.setText(event.getEndTime().toLocalTime().toString());
         ticketList.getItems().setAll(event.getTicketTypes());
         if (!ticketList.getItems().isEmpty()) ticketList.getSelectionModel().selectFirst();
+        else showTicketType(null);
     }
 
     private void showTicketType(TicketType type) {
         if (type == null) {
+            priceField.clear(); quantityField.clear(); typeBox.setValue("STANDARD");
             stockLabel.setText("");
             return;
         }
@@ -182,7 +202,7 @@ public class ManageEventController implements ScreenController {
     }
 
     private void reload(String eventId) {
-        eventData.setAll(context.events().listEvents());
+        eventData.setAll(context.events().searchEvents(searchField.getText()));
         if (eventId == null) {
             if (!eventData.isEmpty()) eventTable.getSelectionModel().selectFirst();
             else showEvent(null);
@@ -190,18 +210,29 @@ public class ManageEventController implements ScreenController {
         }
         eventData.stream().filter(event -> event.getEventId().equals(eventId)).findFirst()
                 .ifPresent(event -> eventTable.getSelectionModel().select(event));
+        eventTable.refresh();
+        showEvent(eventTable.getSelectionModel().getSelectedItem());
+    }
+
+    @FXML private void newEvent() {
+        eventTable.getSelectionModel().clearSelection();
+        showEvent(null);
+    }
+
+    private static java.time.LocalDateTime schedule(DatePicker date, TextField time) {
+        try {
+            date.commitValue();
+            if (date.getValue() == null) throw new IllegalArgumentException();
+            return date.getValue().atTime(java.time.LocalTime.parse(time.getText().trim()));
+        } catch (RuntimeException ex) {
+            throw new IllegalArgumentException("Hãy nhập ngày hợp lệ và giờ theo HH:mm (ví dụ 19:00).");
+        }
     }
 
     private Event selectedEvent() {
         Event selected = eventTable.getSelectionModel().getSelectedItem();
         if (selected == null) UiAlerts.error("Chưa chọn sự kiện", new IllegalArgumentException("Hãy chọn một sự kiện trong bảng."));
         return selected;
-    }
-
-    private boolean hasDate() {
-        if (datePicker.getValue() != null) return true;
-        UiAlerts.error("Thiếu ngày", new IllegalArgumentException("Hãy chọn ngày tổ chức."));
-        return false;
     }
 
     private Admin requireAdmin() {

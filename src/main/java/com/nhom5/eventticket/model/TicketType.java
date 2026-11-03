@@ -11,15 +11,32 @@ public class TicketType {
     public TicketType(String ticketTypeId, String name, BigDecimal price, int quantity) {
         if (quantity < 0) throw new IllegalArgumentException("quantity must be >= 0");
         if (price == null || price.signum() < 0) throw new IllegalArgumentException("price must be >= 0");
-        this.ticketTypeId = java.util.Objects.requireNonNull(ticketTypeId);
-        this.name = java.util.Objects.requireNonNull(name);
+        if (ticketTypeId == null || ticketTypeId.isBlank()) throw new IllegalArgumentException("Mã loại vé không được trống.");
+        this.ticketTypeId = ticketTypeId;
+        this.name = normalizeName(name);
         this.price = price;
         this.quantity = quantity;
         this.availableQuantity = quantity;
     }
     public String getTicketTypeId() { return ticketTypeId; }
     public String getName() { return name; }
-    public void setName(String name) { this.name = java.util.Objects.requireNonNull(name); }
+    public void setName(String name) { this.name = normalizeName(name); }
+    public static String normalizeName(String name) {
+        if (name == null) throw new IllegalArgumentException("Hãy chọn VIP, STANDARD hoặc ECONOMY.");
+        String value = name.trim().toUpperCase(java.util.Locale.ROOT);
+        if (!java.util.Set.of("VIP", "STANDARD", "ECONOMY").contains(value))
+            throw new IllegalArgumentException("Chỉ hỗ trợ VIP, STANDARD hoặc ECONOMY.");
+        return value;
+    }
+    /** Read-only check. Booking owns reservation and must check/reserve under the store lock. */
+    public boolean hasAvailableQuantity(int count) {
+        if (count <= 0) throw new IllegalArgumentException("Số lượng yêu cầu phải lớn hơn 0.");
+        return count <= availableQuantity;
+    }
+    public void checkAvailability(int count) {
+        if (!hasAvailableQuantity(count))
+            throw new com.nhom5.eventticket.exception.OutOfStockException("Số lượng vé đặt vượt quá số vé còn lại.");
+    }
     public BigDecimal getPrice() { return price; }
     public void setPrice(BigDecimal price) {
         if (price == null || price.signum() < 0) throw new IllegalArgumentException("price must be >= 0");
@@ -47,7 +64,7 @@ public class TicketType {
         availableQuantity -= count;
     }
     public void restore(int count) {
-        if (count <= 0 || availableQuantity + count > quantity)
+        if (count <= 0 || count > quantity - availableQuantity)
             throw new IllegalArgumentException("Invalid ticket restore quantity");
         availableQuantity += count;
     }
