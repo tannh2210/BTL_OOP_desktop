@@ -139,4 +139,53 @@ class EventTicketManagementTest {
     @Test void existingBusinessFlowRemainsCompatible() {
         BasicLogicTest.main(new String[0]);
     }
+
+    @Test void unregisteredAndImpersonatedAdminsCannotWrite() {
+        Event event = create();
+        for (String userId : new String[]{"unknown", "U1", "U2"}) {
+            Admin forged = new Admin("fake", userId, "fake", "123456", "Fake", "fake@local");
+            assertThrows(IllegalArgumentException.class, () -> service.createEvent(forged, event));
+            assertThrows(IllegalArgumentException.class, () -> service.deleteEvent(forged, event.getEventId()));
+            assertThrows(IllegalArgumentException.class, () -> service.updateEvent(forged,
+                    event.getEventId(), "Changed", "", "Place", start));
+            assertThrows(IllegalArgumentException.class, () -> service.addTicketType(forged,
+                    event.getEventId(), "VIP", BigDecimal.ONE, 1));
+            assertThrows(IllegalArgumentException.class, () -> service.updateTicketType(forged,
+                    event.getEventId(), event.getTicketTypes().get(0).getTicketTypeId(), BigDecimal.ZERO, 0));
+        }
+        assertSame(event, service.getEventById(event.getEventId()));
+        assertEquals("Hội thảo", event.getName());
+        assertEquals(10, event.getTicketTypes().get(0).getQuantity());
+    }
+
+    @Test void ticketInventoryCannotBeSharedAcrossEvents() {
+        Event first = create();
+        Event second = create();
+        TicketType vip = service.addTicketType(admin, first.getEventId(), "VIP", BigDecimal.ONE, 5);
+        assertThrows(IllegalArgumentException.class, () -> service.addTicketType(admin, second.getEventId(), vip));
+        assertNull(second.findTicketType(vip.getTicketTypeId()));
+        assertSame(vip, first.findTicketType(vip.getTicketTypeId()));
+        assertEquals(5, vip.getAvailableQuantity());
+    }
+
+    @Test void renameCannotIntroduceDuplicateTicketCategory() {
+        Event event = create();
+        TicketType vip = service.addTicketType(admin, event.getEventId(), "VIP", BigDecimal.ONE, 5);
+        assertThrows(IllegalArgumentException.class, () -> vip.setName(" standard "));
+        assertEquals("VIP", vip.getName());
+        vip.setName(" economy ");
+        assertEquals("ECONOMY", vip.getName());
+        assertThrows(IllegalArgumentException.class, () -> service.addTicketType(admin,
+                event.getEventId(), "ECONOMY", BigDecimal.ONE, 1));
+    }
+
+    @Test void eventConstructorAndRescheduleValidateTimesConsistently() {
+        assertThrows(IllegalArgumentException.class, () -> new Event("id", "Name", "", "Place",
+                null, start, "OPEN"));
+        assertThrows(IllegalArgumentException.class, () -> new Event("id", "Name", "", "Place",
+                start, null, "OPEN"));
+        Event event = create();
+        assertThrows(IllegalArgumentException.class, () -> event.reschedule(start, start));
+        assertEquals(start.plusHours(5), event.getEndTime());
+    }
 }

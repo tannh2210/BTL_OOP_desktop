@@ -157,6 +157,8 @@ public class ManageEventController implements ScreenController {
             return;
         }
         try {
+            if (!type.getName().equals(typeBox.getValue()))
+                throw new IllegalArgumentException("Hạng vé phải khớp với loại vé đang chọn. Dùng Thêm loại vé để thêm hạng khác.");
             context.events().updateTicketType(admin, selected.getEventId(), type.getTicketTypeId(),
                     money(priceField.getText()), count(quantityField.getText()));
             reload(selected.getEventId());

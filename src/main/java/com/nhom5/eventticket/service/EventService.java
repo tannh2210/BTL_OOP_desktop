@@ -153,8 +153,9 @@ public class EventService {
             throw new IllegalArgumentException("Ngày sự kiện phải ở tương lai.");
     }
 
-    private static void requireAdmin(Admin admin) {
-        if (admin == null) throw new IllegalArgumentException("Chỉ quản trị viên được quản lý sự kiện.");
+    private void requireAdmin(Admin admin) {
+        if (admin == null || store.findUser(admin.getUserId()).orElse(null) != admin)
+            throw new IllegalArgumentException("Chỉ quản trị viên thuộc hệ thống được quản lý sự kiện.");
     }
 
     private static String newId(String prefix) {

@@ -69,6 +69,34 @@ class EventViewsTest {
         return root instanceof ScrollPane scroll ? (Parent) scroll.getContent() : root;
     }
 
+    @Test void mismatchedTicketCategoryDoesNotUpdateSelectedInventory() throws Exception {
+        onFx(() -> {
+            AppContext context = new AppContext(DemoData.create());
+            context.loginAs(context.auth().login("admin", "123456"));
+            Parent root = load("ManageEventsView.fxml", context);
+            var selected = context.events().getEventById("EV001").findTicketType("T001");
+            ((ComboBox<?>) root.lookup("#typeBox")).getSelectionModel().select(1);
+            ((TextField) root.lookup("#priceField")).setText("1");
+            ((TextField) root.lookup("#quantityField")).setText("1");
+            var message = new java.util.concurrent.atomic.AtomicReference<String>();
+            Platform.runLater(() -> {
+                for (var window : java.util.List.copyOf(javafx.stage.Window.getWindows())) {
+                    if (window.getScene() != null && window.getScene().getRoot() instanceof DialogPane dialog) {
+                        message.set(dialog.getContentText());
+                        ((Button) dialog.lookupButton(ButtonType.OK)).fire();
+                    }
+                }
+            });
+            root.lookupAll(".button").stream().map(n -> (Button) n)
+                    .filter(b -> "Cập nhật loại vé".equals(b.getText())).findFirst().orElseThrow().fire();
+            assertNotNull(message.get());
+            assertTrue(message.get().contains("Hạng vé phải khớp"));
+            assertEquals(new java.math.BigDecimal("500000"), selected.getPrice());
+            assertEquals(80, selected.getQuantity());
+            return null;
+        });
+    }
+
     private static <T> T onFx(java.util.concurrent.Callable<T> action) throws Exception {
         FutureTask<T> task = new FutureTask<>(action);
         Platform.runLater(task);

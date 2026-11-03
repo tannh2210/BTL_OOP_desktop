@@ -19,9 +19,7 @@ public class Event {
         if (eventId == null || eventId.isBlank()) throw new IllegalArgumentException("Mã sự kiện không được trống.");
         this.eventId = eventId;
         updateBasicInfo(name, description, location);
-        this.startTime = java.util.Objects.requireNonNull(startTime);
-        this.endTime = java.util.Objects.requireNonNull(endTime);
-        if (!endTime.isAfter(startTime)) throw new IllegalArgumentException("endTime must be after startTime");
+        reschedule(startTime, endTime);
         this.status = java.util.Objects.requireNonNull(status);
     }
     public String getEventId() { return eventId; }
@@ -51,6 +49,7 @@ public class Event {
         if (findTicketType(type.getTicketTypeId()) != null) throw new IllegalArgumentException("Duplicate ticketTypeId");
         if (ticketTypes.stream().anyMatch(t -> t.getName().equals(type.getName())))
             throw new IllegalArgumentException("Sự kiện đã có loại vé " + type.getName() + ".");
+        type.attachTo(this);
         ticketTypes.add(type);
     }
     public TicketType findTicketType(String typeId) {
@@ -59,8 +58,12 @@ public class Event {
     }
     // UML-specified signatures, with service responsible for user input and policy.
     public Event createEvent() { return this; }
-    public void updateEvent() { throw new UnsupportedOperationException("Chưa hỗ trợ: updateEvent inputs"); }
-    public void deleteEvent() { throw new UnsupportedOperationException("Chưa hỗ trợ: cancellation / delete policy"); }
+    /** @deprecated Use EventService.updateEvent with admin identity and explicit input. */
+    @Deprecated
+    public void updateEvent() { throw new UnsupportedOperationException("Dùng EventService.updateEvent với thông tin cần sửa."); }
+    /** @deprecated Use EventService.deleteEvent to enforce authorization and booking references. */
+    @Deprecated
+    public void deleteEvent() { throw new UnsupportedOperationException("Dùng EventService.deleteEvent để kiểm tra quyền và booking."); }
     public String getDetails() {
         return eventId + " | " + name + " | " + location + " | " + startTime + " | " + status;
     }

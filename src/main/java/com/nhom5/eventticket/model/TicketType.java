@@ -8,6 +8,7 @@ public class TicketType {
     private BigDecimal price;
     private int quantity;
     private int availableQuantity;
+    private Event owner;
     public TicketType(String ticketTypeId, String name, BigDecimal price, int quantity) {
         if (quantity < 0) throw new IllegalArgumentException("quantity must be >= 0");
         if (price == null || price.signum() < 0) throw new IllegalArgumentException("price must be >= 0");
@@ -20,7 +21,19 @@ public class TicketType {
     }
     public String getTicketTypeId() { return ticketTypeId; }
     public String getName() { return name; }
-    public void setName(String name) { this.name = normalizeName(name); }
+    public void setName(String name) {
+        String normalized = normalizeName(name);
+        if (owner != null && owner.getTicketTypes().stream()
+                .anyMatch(type -> type != this && type.getName().equals(normalized)))
+            throw new IllegalArgumentException("Sự kiện đã có loại vé " + normalized + ".");
+        this.name = normalized;
+    }
+    /** Composition is assigned only by Event.addTicketType; inventory cannot be shared by events. */
+    void attachTo(Event event) {
+        if (owner != null && owner != event)
+            throw new IllegalArgumentException("Loại vé đã thuộc một sự kiện khác.");
+        owner = java.util.Objects.requireNonNull(event);
+    }
     public static String normalizeName(String name) {
         if (name == null) throw new IllegalArgumentException("Hãy chọn VIP, STANDARD hoặc ECONOMY.");
         String value = name.trim().toUpperCase(java.util.Locale.ROOT);
@@ -45,7 +58,8 @@ public class TicketType {
     public int getQuantity() { return quantity; }
     public int getAvailableQuantity() { return availableQuantity; }
     public boolean isAvailable() { return availableQuantity > 0; }
-    /** UML method kept without arguments. Stock changes go through EventService. */
+    /** @deprecated Use EventService.updateTicketType with explicit price and total quantity. */
+    @Deprecated
     public void updateQuantity() { throw new UnsupportedOperationException("Dùng EventService.updateTicketType"); }
 
     public void changeStock(BigDecimal newPrice, int newQuantity) {
