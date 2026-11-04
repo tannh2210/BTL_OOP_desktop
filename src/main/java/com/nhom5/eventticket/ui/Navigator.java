@@ -40,6 +40,10 @@ public final class Navigator {
         onLogout.run();
     }
 
+    public void refreshSessionInfo() {
+        shell.refreshSessionInfo();
+    }
+
     public void dashboard() { show("DashboardView.fxml", "Trang chủ", "Khám phá những sự kiện nổi bật"); }
     public void accounts() { show("AccountView.fxml", "Tài khoản", "Thông tin tài khoản của bạn"); }
     public void events() {

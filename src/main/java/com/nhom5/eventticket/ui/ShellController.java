@@ -35,7 +35,15 @@ public class ShellController {
     void setPageTitle(String title, String subtitle) {
         pageTitle.setText(title);
         pageSubtitle.setText(subtitle);
+        refreshSessionInfo();
+    }
+
+    void refreshSessionInfo() {
         User user = context.currentUser();
+        if (user == null) {
+            sessionLabel.setText("");
+            return;
+        }
         String role = user instanceof Admin ? "Quản trị" : "Khách hàng";
         sessionLabel.setText(user.getFullName() + " · " + role);
     }

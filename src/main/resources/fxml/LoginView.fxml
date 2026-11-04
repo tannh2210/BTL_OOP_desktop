@@ -16,9 +16,9 @@
       <Label text="Mật khẩu" styleClass="input-label" />
       <PasswordField fx:id="passwordField" promptText="Mật khẩu" onAction="#login" />
     </VBox>
-    <Button text="Đăng nhập" onAction="#login" defaultButton="true" styleClass="primary-button" maxWidth="Infinity" />
+    <Button fx:id="loginButton" text="Đăng nhập" onAction="#login" defaultButton="true" styleClass="primary-button" maxWidth="Infinity" />
     <Label fx:id="statusLabel" text="" wrapText="true" styleClass="form-error" />
-    <Button text="Chưa có tài khoản? Đăng ký" onAction="#showRegister" styleClass="link-button" />
+    <Button fx:id="registerLinkButton" text="Chưa có tài khoản? Đăng ký" onAction="#showRegister" styleClass="link-button" />
     <VBox fx:id="registerBox" spacing="8" visible="false" managed="false">
       <Separator />
       <Label text="Tạo tài khoản khách hàng" styleClass="panel-title" />
@@ -26,7 +26,10 @@
       <TextField fx:id="fullNameField" promptText="Họ và tên" />
       <Label text="Email" styleClass="input-label" />
       <TextField fx:id="emailField" promptText="Email" />
+      <Label text="Xác nhận mật khẩu" styleClass="input-label" />
+      <PasswordField fx:id="confirmPasswordField" promptText="Nhập lại mật khẩu" onAction="#register" />
       <Button text="Đăng ký và vào ứng dụng" onAction="#register" styleClass="secondary-button" maxWidth="Infinity" />
+      <Button text="Quay lại đăng nhập" onAction="#showLogin" styleClass="link-button" />
     </VBox>
     <Label text="Tài khoản dùng thử: customer / 123456 hoặc admin / 123456" wrapText="true" styleClass="hint-label" />
   </VBox>
