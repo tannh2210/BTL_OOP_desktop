@@ -81,5 +81,5 @@ public class EventController implements ScreenController {
     }
 
     @FXML
-    private void goBooking() { navigator.bookings(); }
+    private void goBooking() { navigator.bookings(eventTable.getSelectionModel().getSelectedItem()); }
 }

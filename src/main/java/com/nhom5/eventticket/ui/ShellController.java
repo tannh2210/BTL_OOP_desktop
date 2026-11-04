@@ -51,8 +51,9 @@ public class ShellController {
     private void applyRole() {
         boolean admin = context.currentUser() instanceof Admin;
         eventsButton.setText(admin ? "▦   Quản lý sự kiện" : "▦   Danh sách sự kiện");
-        bookingsButton.setVisible(!admin);
-        bookingsButton.setManaged(!admin);
+        bookingsButton.setVisible(true);
+        bookingsButton.setManaged(true);
+        bookingsButton.setText(admin ? "▤   Quản lý booking" : "▤   Đặt vé / lịch sử");
         adminSection.setVisible(admin);
         adminSection.setManaged(admin);
     }

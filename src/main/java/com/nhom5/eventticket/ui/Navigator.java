@@ -2,6 +2,7 @@ package com.nhom5.eventticket.ui;
 
 import com.nhom5.eventticket.AppContext;
 import com.nhom5.eventticket.model.Admin;
+import com.nhom5.eventticket.model.Event;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.layout.StackPane;
@@ -53,7 +54,14 @@ public final class Navigator {
         }
         show("EventsView.fxml", "Sự kiện", "Danh sách sự kiện và loại vé");
     }
-    public void bookings() { show("BookingView.fxml", "Đặt vé", "Chọn vé và xem lịch sử đặt chỗ"); }
+    private Event pendingEvent;
+    public void bookings() {
+        boolean admin = context.currentUser() instanceof Admin;
+        show("BookingView.fxml", admin ? "Quản lý booking" : "Đặt vé",
+                admin ? "Xem, lọc và hủy booking hệ thống" : "Chọn vé và xem lịch sử đặt chỗ");
+    }
+    public void bookings(Event event) { pendingEvent = event; bookings(); }
+    Event consumePendingEvent() { Event event = pendingEvent; pendingEvent = null; return event; }
     public void checkIns() { show("CheckInView.fxml", "Check-in", "Xác nhận vé tham dự"); }
     public void statistics() { show("StatisticsView.fxml", "Thống kê", "Tổng quan hoạt động"); }
     public void notifications() { show("NotificationsView.fxml", "Thông báo", "Cập nhật từ các booking của bạn"); }
