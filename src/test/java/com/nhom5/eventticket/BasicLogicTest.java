@@ -19,11 +19,20 @@ public class BasicLogicTest {
         ok(app.bookings().getBookingHistory(customer.getUserId()).size()==1,"History");
         ok(app.statistics().getStatistics().getTotalRevenue().compareTo(new BigDecimal("1000000"))==0,"Revenue");
         String code=b.getTickets().get(0).getTicketCode();
-        var record=app.checkIns().checkIn(code,admin.getUserId());
+        int stockBeforeCheckIn=type.getAvailableQuantity();
+        var record=app.checkIns().checkIn(code.toLowerCase(),admin.getUserId());
         ok(record.getTicket().isUsed(),"Checkin");
+        ok(type.getAvailableQuantity()==stockBeforeCheckIn,"Check-in does not change stock");
+        ok(app.statistics().countCheckedInTickets()>=1,"Checked-in count");
+        ok(app.statistics().getStatistics().getConfirmedBookings()>=1,"Confirmed bookings");
         boolean duplicate=false;
         try{app.checkIns().checkIn(code,admin.getUserId());}catch(RuntimeException ex){duplicate=true;}
         ok(duplicate,"Duplicate checkin rejected");
+        boolean tooEarly=false;
+        Booking future=app.bookings().bookTicket(customer.getUserId(),"EV002","T004",1);
+        try{app.checkIns().checkIn(future.getTickets().get(0).getTicketCode(),admin.getUserId());}
+        catch(RuntimeException ex){tooEarly=ex.getMessage()!=null&&ex.getMessage().contains("Chưa tới ngày diễn ra");}
+        ok(tooEarly,"Check-in before event day rejected");
         boolean cancelledUsed=false;
         try{app.bookings().cancelBooking(customer.getUserId(),b.getBookingId());}catch(RuntimeException ex){cancelledUsed=true;}
         ok(cancelledUsed,"Cannot cancel used ticket");

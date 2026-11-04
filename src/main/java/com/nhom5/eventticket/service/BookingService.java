@@ -4,11 +4,22 @@ import com.nhom5.eventticket.model.*;
 import com.nhom5.eventticket.repository.InMemoryStore;
 import java.time.LocalDateTime;
 import java.util.*;
-/** Basic booking flow. Payment, real inventory transactions and persistence are future work. */
+/**
+ * Basic booking flow (Người 3).
+ * Thông báo đặt/hủy vé gọi API dùng chung của Người 4 ({@link NotificationService}),
+ * không tự tạo hệ thống Notification riêng.
+ */
 public class BookingService {
     private final InMemoryStore store;
     private final TicketFactory factory;
-    public BookingService(InMemoryStore store, TicketFactory factory) { this.store = store; this.factory = factory; }
+    private final NotificationService notifications;
+
+    public BookingService(InMemoryStore store, TicketFactory factory, NotificationService notifications) {
+        this.store = store;
+        this.factory = factory;
+        this.notifications = Objects.requireNonNull(notifications);
+    }
+
     public Booking bookTicket(String customerId, String eventId, String typeId, int quantity) {
         if (quantity < 1 || quantity > 10) throw new IllegalArgumentException("Mỗi lần đặt từ 1 đến 10 vé.");
         synchronized (store) {
@@ -31,8 +42,7 @@ public class BookingService {
                 booking.confirmBooking();
                 for (Ticket t:created) store.saveTicket(t);
                 store.saveBooking(booking);
-                store.saveNotification(new Notification(UUID.randomUUID().toString(),
-                  "Bạn đã đặt " + quantity + " vé cho " + event.getName() + ". Mã: " + booking.getBookingId(), LocalDateTime.now(), customer));
+                notifications.notifyBookingConfirmed(booking);
                 return booking;
             } catch (RuntimeException ex) {
                 // Best-effort rollback for the starter's single-threaded UI flow.
@@ -53,7 +63,9 @@ public class BookingService {
         synchronized (store) {
             Booking b = store.findBooking(bookingId).orElseThrow(()->new IllegalArgumentException("Không tìm thấy booking."));
             if (!b.getCustomer().getUserId().equals(userId)) throw new IllegalArgumentException("Booking không thuộc tài khoản này.");
+
             cancelBookingLocked(b);
+
         }
     }
     public void cancelBookingAsAdmin(String adminId, String bookingId) {
@@ -70,7 +82,6 @@ public class BookingService {
             throw new IllegalStateException("Chỉ được hủy booking trước giờ bắt đầu sự kiện.");
         booking.cancelBooking(); // Blocks the whole booking when any ticket has been checked in.
         for (Ticket ticket : booking.getTickets()) ticket.getTicketType().restore(1);
-        store.saveNotification(new Notification(UUID.randomUUID().toString(),
-                "Booking " + booking.getBookingId() + " đã được hủy.", LocalDateTime.now(), booking.getCustomer()));
+        notifications.notifyBookingCancelled(booking);
     }
 }

@@ -18,6 +18,12 @@ public class User {
     public String getUserId() { return userId; }
     public String getUsername() { return username; }
     public boolean matchesPassword(String input) { return password.equals(input); }
+    /** Updates the credential only when the caller supplies the exact current password. */
+    public void changePassword(String currentPassword, String newPassword) {
+        if (!matchesPassword(currentPassword))
+            throw new IllegalArgumentException("Mật khẩu hiện tại không chính xác.");
+        this.password = java.util.Objects.requireNonNull(newPassword);
+    }
     public String getFullName() { return fullName; }
     public String getEmail() { return email; }
     public void setFullName(String fullName) { this.fullName = java.util.Objects.requireNonNull(fullName); }

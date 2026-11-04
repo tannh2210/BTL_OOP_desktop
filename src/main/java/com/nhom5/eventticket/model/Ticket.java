@@ -31,4 +31,12 @@ public class Ticket {
         status = "CANCELLED";
     }
     public boolean isUsed() { return "USED".equals(status); }
+
+    /**
+     * Quyền lợi theo hạng vé (đa hình). Các lớp con VIP/Standard/Economy ghi đè.
+     * Dùng khi check-in / hiển thị; không đổi luồng đặt vé.
+     */
+    public String getBenefitSummary() {
+        return "Vé tiêu chuẩn.";
+    }
 }
