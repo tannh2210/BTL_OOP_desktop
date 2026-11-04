@@ -19,8 +19,11 @@ public class BasicLogicTest {
         ok(app.bookings().getBookingHistory(customer.getUserId()).size()==1,"History");
         ok(app.statistics().getStatistics().getTotalRevenue().compareTo(new BigDecimal("1000000"))==0,"Revenue");
         String code=b.getTickets().get(0).getTicketCode();
+        int stockBeforeCheckIn=type.getAvailableQuantity();
         var record=app.checkIns().checkIn(code,admin.getUserId());
         ok(record.getTicket().isUsed(),"Checkin");
+        ok(type.getAvailableQuantity()==stockBeforeCheckIn,"Check-in does not change stock");
+        ok(app.statistics().countCheckedInTickets()>=1,"Checked-in count");
         boolean duplicate=false;
         try{app.checkIns().checkIn(code,admin.getUserId());}catch(RuntimeException ex){duplicate=true;}
         ok(duplicate,"Duplicate checkin rejected");
