@@ -1,24 +1,31 @@
 package com.nhom5.eventticket.ui;
 
 import com.nhom5.eventticket.AppContext;
+import com.nhom5.eventticket.model.Customer;
+import com.nhom5.eventticket.model.User;
 import javafx.fxml.FXML;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
-import javafx.scene.control.Button;
 import javafx.scene.layout.VBox;
 
 /** First screen. The rest of the application opens only after a successful sign-in. */
 public class LoginController {
-    @FXML private TextField usernameField;
-    @FXML private PasswordField passwordField;
+    @FXML private TextField loginUsernameField;
+    @FXML private PasswordField loginPasswordField;
+    @FXML private TextField registerUsernameField;
+    @FXML private PasswordField registerPasswordField;
     @FXML private PasswordField confirmPasswordField;
     @FXML private TextField fullNameField;
     @FXML private TextField emailField;
     @FXML private Label statusLabel;
+    @FXML private Label formTitle;
+    @FXML private Label formDescription;
+    @FXML private VBox loginBox;
     @FXML private VBox registerBox;
     @FXML private Button loginButton;
-    @FXML private Button registerLinkButton;
+    @FXML private Button registerButton;
 
     private AppContext context;
     private Runnable onAuthenticated;
@@ -30,23 +37,28 @@ public class LoginController {
 
     @FXML
     private void initialize() {
-        usernameField.textProperty().addListener((obs, oldValue, newValue) -> clearStatus());
-        passwordField.textProperty().addListener((obs, oldValue, newValue) -> clearStatus());
+        loginUsernameField.textProperty().addListener((obs, oldValue, newValue) -> clearStatus());
+        loginPasswordField.textProperty().addListener((obs, oldValue, newValue) -> clearStatus());
+        registerUsernameField.textProperty().addListener((obs, oldValue, newValue) -> clearStatus());
+        registerPasswordField.textProperty().addListener((obs, oldValue, newValue) -> clearStatus());
         confirmPasswordField.textProperty().addListener((obs, oldValue, newValue) -> clearStatus());
         fullNameField.textProperty().addListener((obs, oldValue, newValue) -> clearStatus());
         emailField.textProperty().addListener((obs, oldValue, newValue) -> clearStatus());
+        showLogin();
     }
 
     @FXML
     private void showRegister() {
         clearStatus();
+        loginBox.setVisible(false);
+        loginBox.setManaged(false);
         registerBox.setVisible(true);
         registerBox.setManaged(true);
-        loginButton.setVisible(false);
-        loginButton.setManaged(false);
-        registerLinkButton.setVisible(false);
-        registerLinkButton.setManaged(false);
-        usernameField.requestFocus();
+        loginButton.setDefaultButton(false);
+        registerButton.setDefaultButton(true);
+        formTitle.setText("Tạo tài khoản");
+        formDescription.setText("Nhập đầy đủ thông tin để đăng ký tài khoản khách hàng.");
+        fullNameField.requestFocus();
     }
 
     @FXML
@@ -54,18 +66,21 @@ public class LoginController {
         clearStatus();
         registerBox.setVisible(false);
         registerBox.setManaged(false);
-        loginButton.setVisible(true);
-        loginButton.setManaged(true);
-        registerLinkButton.setVisible(true);
-        registerLinkButton.setManaged(true);
+        loginBox.setVisible(true);
+        loginBox.setManaged(true);
+        registerButton.setDefaultButton(false);
+        loginButton.setDefaultButton(true);
+        formTitle.setText("Đăng nhập");
+        formDescription.setText("Đăng nhập để tiếp tục sử dụng ứng dụng.");
+        loginUsernameField.requestFocus();
     }
 
     @FXML
     private void login() {
         clearStatus();
-        final com.nhom5.eventticket.model.User user;
+        final User user;
         try {
-            user = context.auth().login(usernameField.getText(), passwordField.getText());
+            user = context.auth().login(loginUsernameField.getText(), loginPasswordField.getText());
         } catch (RuntimeException ex) {
             showError(message(ex));
             return;
@@ -77,15 +92,15 @@ public class LoginController {
     @FXML
     private void register() {
         clearStatus();
-        if (!passwordField.getText().equals(confirmPasswordField.getText())) {
+        if (!registerPasswordField.getText().equals(confirmPasswordField.getText())) {
             showError("Mật khẩu xác nhận không khớp.");
             return;
         }
-        final com.nhom5.eventticket.model.Customer user;
+        final Customer user;
         try {
             user = context.auth().registerCustomer(
-                    usernameField.getText(),
-                    passwordField.getText(),
+                    registerUsernameField.getText(),
+                    registerPasswordField.getText(),
                     fullNameField.getText(),
                     emailField.getText());
         } catch (RuntimeException ex) {

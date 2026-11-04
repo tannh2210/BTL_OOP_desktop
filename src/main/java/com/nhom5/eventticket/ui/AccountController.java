@@ -6,6 +6,7 @@ import com.nhom5.eventticket.model.User;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 
 public class AccountController implements ScreenController {
@@ -15,6 +16,11 @@ public class AccountController implements ScreenController {
     @FXML private TextField emailField;
     @FXML private Label profileStatusLabel;
     @FXML private Button saveButton;
+    @FXML private PasswordField currentPasswordField;
+    @FXML private PasswordField newPasswordField;
+    @FXML private PasswordField confirmNewPasswordField;
+    @FXML private Label passwordStatusLabel;
+    @FXML private Button changePasswordButton;
 
     private Navigator navigator;
     private AppContext context;
@@ -30,6 +36,7 @@ public class AccountController implements ScreenController {
             fullNameField.clear();
             emailField.clear();
             saveButton.setDisable(true);
+            changePasswordButton.setDisable(true);
             return;
         }
         usernameLabel.setText(user.getUsername());
@@ -37,12 +44,43 @@ public class AccountController implements ScreenController {
         fullNameField.setText(user.getFullName());
         emailField.setText(user.getEmail());
         saveButton.setDisable(false);
+        changePasswordButton.setDisable(false);
     }
 
     @FXML
     private void initialize() {
         fullNameField.textProperty().addListener((obs, oldValue, newValue) -> clearStatus());
         emailField.textProperty().addListener((obs, oldValue, newValue) -> clearStatus());
+        currentPasswordField.textProperty().addListener((obs, oldValue, newValue) -> clearPasswordStatus());
+        newPasswordField.textProperty().addListener((obs, oldValue, newValue) -> clearPasswordStatus());
+        confirmNewPasswordField.textProperty().addListener((obs, oldValue, newValue) -> clearPasswordStatus());
+    }
+
+    @FXML
+    private void changePassword() {
+        clearPasswordStatus();
+        User user = context.currentUser();
+        if (user == null) {
+            showPasswordError("Phiên đăng nhập đã kết thúc. Vui lòng đăng nhập lại.");
+            return;
+        }
+        String newPassword = newPasswordField.getText();
+        if (!newPassword.equals(confirmNewPasswordField.getText())) {
+            showPasswordError("Mật khẩu mới và xác nhận mật khẩu không khớp.");
+            return;
+        }
+        try {
+            context.auth().changePassword(user, currentPasswordField.getText(), newPassword);
+            currentPasswordField.clear();
+            newPasswordField.clear();
+            confirmNewPasswordField.clear();
+            passwordStatusLabel.setText("Đã đổi mật khẩu thành công.");
+            passwordStatusLabel.getStyleClass().remove("form-error");
+            if (!passwordStatusLabel.getStyleClass().contains("form-success"))
+                passwordStatusLabel.getStyleClass().add("form-success");
+        } catch (RuntimeException ex) {
+            showPasswordError(ex.getMessage() == null ? "Không thể đổi mật khẩu." : ex.getMessage());
+        }
     }
 
     @FXML
@@ -82,5 +120,17 @@ public class AccountController implements ScreenController {
         profileStatusLabel.getStyleClass().remove("form-success");
         if (!profileStatusLabel.getStyleClass().contains("form-error"))
             profileStatusLabel.getStyleClass().add("form-error");
+    }
+
+    private void clearPasswordStatus() {
+        passwordStatusLabel.setText("");
+        passwordStatusLabel.getStyleClass().removeAll("form-error", "form-success");
+    }
+
+    private void showPasswordError(String message) {
+        passwordStatusLabel.setText(message);
+        passwordStatusLabel.getStyleClass().remove("form-success");
+        if (!passwordStatusLabel.getStyleClass().contains("form-error"))
+            passwordStatusLabel.getStyleClass().add("form-error");
     }
 }
