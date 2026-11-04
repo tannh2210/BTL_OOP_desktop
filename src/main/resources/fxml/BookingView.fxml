@@ -18,7 +18,7 @@
       <Separator />
       <HBox alignment="CENTER_LEFT" spacing="12"><Label text="Tạm tính" styleClass="panel-title"/>
       <Region HBox.hgrow="ALWAYS"/><Label fx:id="totalLabel" text="0 VND" styleClass="price-label"/></HBox>
-      <HBox spacing="10"><Button text="Xác nhận đặt vé" onAction="#placeBooking" styleClass="primary-button"/>
+      <HBox spacing="10"><Button fx:id="placeBookingButton" text="Xác nhận đặt vé" onAction="#placeBooking" styleClass="primary-button"/>
       <Button text="Vé của tôi" onAction="#viewHistory" styleClass="secondary-button"/></HBox>
     </VBox>
     <VBox spacing="12" styleClass="panel">

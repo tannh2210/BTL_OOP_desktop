@@ -14,6 +14,7 @@ public class BookingController implements ScreenController {
     @FXML private Label availabilityLabel;
     @FXML private Label totalLabel;
     @FXML private ListView<String> bookingList;
+    @FXML private Button placeBookingButton;
     private AppContext context;
     private final List<Booking> rows=new ArrayList<>();
     @Override public void init(AppContext context,Navigator navigator) {
@@ -29,7 +30,7 @@ public class BookingController implements ScreenController {
         quantitySpinner.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1,10,1));
         eventBox.getItems().setAll(context.events().listEvents());
         eventBox.valueProperty().addListener((obs,oldV,v)->{
-            typeBox.getItems().clear();if(v!=null)typeBox.getItems().setAll(v.getTicketTypes());
+            typeBox.getItems().clear();if(v!=null)typeBox.getItems().setAll(v.getTicketTypes().stream().filter(TicketType::isSalesEnabled).toList());
             typeBox.getSelectionModel().selectFirst();updateQuote();
         });
         typeBox.valueProperty().addListener((obs,oldV,v)->updateQuote());
@@ -37,6 +38,14 @@ public class BookingController implements ScreenController {
         eventBox.getSelectionModel().selectFirst();refreshHistory();
     }
     private void updateQuote() {
+        TicketType selected = typeBox.getValue();
+        placeBookingButton.setDisable(!(context.currentUser() instanceof Customer)
+                || eventBox.getValue() == null || !eventBox.getValue().canBook()
+                || selected == null || !selected.isSalesEnabled()
+                || selected.getAvailableQuantity() < quantitySpinner.getValue());
+        if (eventBox.getValue() != null && !eventBox.getValue().canBook()) {
+            availabilityLabel.setText("Đã đóng bán vé"); totalLabel.setText("0 VND"); return;
+        }
         TicketType type=typeBox.getValue();
         if(type==null){availabilityLabel.setText("Hãy chọn hạng vé.");totalLabel.setText("0 VND");return;}
         availabilityLabel.setText("Còn " + type.getAvailableQuantity() + " vé");
@@ -53,7 +62,7 @@ public class BookingController implements ScreenController {
             String codes=String.join(", ",result.getTickets().stream().map(Ticket::getTicketCode).toList());
             UiAlerts.success("Đặt vé thành công!\nMã booking: " + result.getBookingId() + "\nMã vé: " + codes);
             updateQuote();refreshHistory();
-        } catch(RuntimeException ex){UiAlerts.error("Đặt vé thất bại",ex);}
+        } catch(RuntimeException ex){updateQuote();UiAlerts.error("Đặt vé thất bại",ex);}
     }
     @FXML private void viewHistory() {refreshHistory();}
     private void refreshHistory() {

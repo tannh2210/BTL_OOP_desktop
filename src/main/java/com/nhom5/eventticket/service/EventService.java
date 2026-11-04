@@ -39,6 +39,7 @@ public class EventService {
      */
     public void checkTicketAvailability(String eventId, String typeId, int quantity) {
         synchronized (store) {
+            if (!getEventById(eventId).canBook()) throw new IllegalArgumentException("Sự kiện đã đóng bán vé.");
             getTicketType(eventId, typeId).checkAvailability(quantity);
         }
     }
@@ -133,6 +134,37 @@ public class EventService {
         synchronized (store) {
             requireAdmin(admin);
             getTicketType(eventId, typeId).changeStock(price, quantity);
+        }
+    }
+
+    public void setTicketSalesOpen(Admin admin, String eventId, boolean open) {
+        synchronized (store) {
+            requireAdmin(admin);
+            Event event = getEventById(eventId);
+            // Keep the existing policy: reservations close when the event starts.
+            if (open && (!"OPEN".equals(event.getStatus()) || !event.getStartTime().isAfter(LocalDateTime.now())))
+                throw new IllegalArgumentException("Chỉ mở bán cho sự kiện hợp lệ chưa bắt đầu.");
+            event.setTicketSalesOpen(open);
+        }
+    }
+
+    public void setTicketTypeSalesEnabled(Admin admin, String eventId, String typeId, boolean enabled) {
+        synchronized (store) {
+            requireAdmin(admin);
+            getTicketType(eventId, typeId).setSalesEnabled(enabled);
+        }
+    }
+
+    public void deleteTicketType(Admin admin, String eventId, String typeId) {
+        synchronized (store) {
+            requireAdmin(admin);
+            TicketType type = getTicketType(eventId, typeId);
+            boolean used = type.getAvailableQuantity() != type.getQuantity()
+                    || store.allTickets().stream().anyMatch(t -> t.getTicketType() == type)
+                    || store.allBookings().stream().flatMap(b -> b.getTickets().stream())
+                        .anyMatch(t -> t.getTicketType() == type);
+            if (used) throw new IllegalArgumentException("Loại vé có lịch sử hoặc đặt chỗ. Hãy ngừng bán thay vì xóa.");
+            getEventById(eventId).removeTicketType(type);
         }
     }
 

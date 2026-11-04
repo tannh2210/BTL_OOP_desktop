@@ -78,7 +78,7 @@ class EventTicketManagementTest {
 
     @Test void supportedTypesAndBothAddOverloadsRejectDuplicates() {
         Event event = create();
-        service.addTicketType(admin, event.getEventId(), "vip", BigDecimal.ZERO, 0);
+        service.addTicketType(admin, event.getEventId(), "vip", BigDecimal.ONE, 1);
         service.addTicketType(admin, event.getEventId(), "ECONOMY", BigDecimal.ONE, 3);
         assertEquals(3, event.getTicketTypes().size());
         assertThrows(IllegalArgumentException.class, () -> service.addTicketType(admin,
@@ -103,7 +103,7 @@ class EventTicketManagementTest {
         assertEquals(BigDecimal.TEN, type.getPrice());
         assertThrows(IllegalArgumentException.class, () -> type.changeStock(BigDecimal.ONE.negate(), 6));
         assertThrows(IllegalArgumentException.class, () -> new TicketType("id", "VIP", BigDecimal.ONE, -1));
-        service.updateTicketType(admin, event.getEventId(), type.getTicketTypeId(), BigDecimal.ZERO, 4);
+        service.updateTicketType(admin, event.getEventId(), type.getTicketTypeId(), BigDecimal.ONE, 4);
         assertFalse(type.isAvailable());
     }
 

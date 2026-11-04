@@ -46,7 +46,7 @@ public class EventController implements ScreenController {
         eventNameCol.setCellValueFactory(d -> new ReadOnlyStringWrapper(d.getValue().getName()));
         locationCol.setCellValueFactory(d -> new ReadOnlyStringWrapper(d.getValue().getLocation()));
         timeCol.setCellValueFactory(d -> new ReadOnlyStringWrapper(FMT.format(d.getValue().getStartTime())));
-        statusCol.setCellValueFactory(d -> new ReadOnlyStringWrapper(d.getValue().getStatus()));
+        statusCol.setCellValueFactory(d -> new ReadOnlyStringWrapper(d.getValue().getSalesLabel()));
         eventData = FXCollections.observableArrayList(context.events().listEvents());
         list = new FilteredList<>(eventData);
         var sorted = new javafx.collections.transformation.SortedList<>(list);
@@ -64,7 +64,7 @@ public class EventController implements ScreenController {
     }
 
     private void showDetails(Event event) {
-        bookButton.setDisable(event == null || !"OPEN".equals(event.getStatus())
+        bookButton.setDisable(event == null || !event.canBook()
                 || !event.getStartTime().isAfter(java.time.LocalDateTime.now())
                 || event.getTicketTypes().stream().noneMatch(t -> t.isAvailable()));
         if (event == null) {
@@ -74,9 +74,11 @@ public class EventController implements ScreenController {
         }
         eventDetail.setText(event.getName() + "\n" + event.getDescription() + "\n"
                 + event.getLocation() + " • " + event.getStartTime().format(FMT)
-                + " → " + event.getEndTime().format(FMT) + " • " + event.getStatus());
+                + " → " + event.getEndTime().format(FMT) + " • " + event.getSalesLabel());
         ticketTypesList.getItems().setAll(event.getTicketTypes().stream()
-                .map(t -> t.getName() + "  •  " + t.getPrice().toPlainString() + " VND  •  Còn " + t.getAvailableQuantity())
+                .filter(t -> t.isSalesEnabled())
+                .map(t -> t.getName() + "  •  " + t.getPrice().toPlainString() + " VND  •  Còn " + t.getAvailableQuantity()
+                        + " • " + t.getSalesLabel())
                 .toList());
     }
 
