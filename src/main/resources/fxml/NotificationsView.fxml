@@ -6,7 +6,7 @@
  <top><VBox spacing="8">
     <Label text="THÔNG BÁO" styleClass="section-label"/>
     <Label text="Thông báo của bạn" styleClass="heading"/>
-    <Label text="Các cập nhật liên quan đến vé đã đặt." styleClass="muted-label"/>
+    <Label text="Danh sách tự tải khi mở màn hình và tự cập nhật khi có thông báo mới." styleClass="muted-label" wrapText="true"/>
     <Button text="Làm mới" onAction="#refresh" styleClass="secondary-button"/>
  </VBox></top>
  <center><ListView fx:id="notificationsList"/></center>

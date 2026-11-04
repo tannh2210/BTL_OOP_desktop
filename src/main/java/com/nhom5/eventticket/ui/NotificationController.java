@@ -2,6 +2,8 @@ package com.nhom5.eventticket.ui;
 
 import com.nhom5.eventticket.AppContext;
 import com.nhom5.eventticket.model.Notification;
+import com.nhom5.eventticket.observer.NotificationListener;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.ListView;
 
@@ -18,12 +20,19 @@ public class NotificationController implements ScreenController {
     @Override
     public void init(AppContext context, Navigator navigator) {
         this.context = context;
+        // Tự tải khi mở màn; tự làm mới nếu có thông báo mới khi đang mở màn này.
+        NotificationListener uiListener = notification -> {
+            if (context.currentUser() == null) return;
+            if (!notification.getRecipient().getUserId().equals(context.currentUser().getUserId())) return;
+            Platform.runLater(this::refresh);
+        };
+        context.notifications().setUiListener(uiListener);
         refresh();
     }
 
     @FXML
     private void refresh() {
-        if (context.currentUser() == null) {
+        if (context == null || context.currentUser() == null) {
             notificationsList.getItems().setAll("Hãy đăng nhập để xem thông báo.");
             return;
         }

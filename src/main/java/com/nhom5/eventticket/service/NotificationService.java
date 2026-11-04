@@ -19,18 +19,17 @@ import java.util.UUID;
  * <p>
  * Module khác (Booking, Event, Check-in) chỉ gọi các phương thức publish/notify* bên dưới.
  * Không tạo hệ thống Notification riêng.
- * <p>
- * Luồng: tạo {@link Notification} → lưu store → {@code sendNotification()} → báo các listener.
  */
 public class NotificationService {
     private final InMemoryStore store;
     private final List<NotificationListener> listeners = new ArrayList<>();
+    /** Listener UI duy nhất — tránh rò khi mở lại màn Thông báo. */
+    private NotificationListener uiListener;
 
     public NotificationService(InMemoryStore store) {
         this.store = Objects.requireNonNull(store);
     }
 
-    /** Đăng ký Observer (Chapter 10.5: subscribe). */
     public synchronized void subscribe(NotificationListener listener) {
         Objects.requireNonNull(listener, "listener");
         if (!listeners.contains(listener)) {
@@ -38,15 +37,24 @@ public class NotificationService {
         }
     }
 
-    /** Hủy đăng ký Observer (Chapter 10.5: unsubscribe). */
     public synchronized void unsubscribe(NotificationListener listener) {
         listeners.remove(listener);
     }
 
     /**
-     * API chung: phát thông báo tới một User.
-     * Người 2 / Người 3 gọi phương thức này khi có thay đổi cần báo cho người dùng.
+     * Đăng ký listener cho màn Thông báo (thay listener cũ nếu có).
+     * Giúp danh sách tự cập nhật khi có thông báo mới mà không cần bấm Làm mới.
      */
+    public synchronized void setUiListener(NotificationListener listener) {
+        if (uiListener != null) {
+            listeners.remove(uiListener);
+        }
+        uiListener = listener;
+        if (listener != null && !listeners.contains(listener)) {
+            listeners.add(listener);
+        }
+    }
+
     public Notification notifyUser(User recipient, String message) {
         Objects.requireNonNull(recipient, "recipient");
         if (message == null || message.isBlank()) {
@@ -67,7 +75,6 @@ public class NotificationService {
         return notification;
     }
 
-    /** Thông báo khi đặt vé thành công – Người 3 gọi sau khi tạo Booking. */
     public Notification notifyBookingConfirmed(Booking booking) {
         Objects.requireNonNull(booking, "booking");
         String message = "Bạn đã đặt " + booking.getTickets().size()
@@ -76,7 +83,6 @@ public class NotificationService {
         return notifyUser(booking.getCustomer(), message);
     }
 
-    /** Thông báo khi hủy vé – Người 3 gọi sau khi hủy Booking. */
     public Notification notifyBookingCancelled(Booking booking) {
         Objects.requireNonNull(booking, "booking");
         String message = "Booking " + booking.getBookingId()
@@ -84,7 +90,6 @@ public class NotificationService {
         return notifyUser(booking.getCustomer(), message);
     }
 
-    /** Thông báo khi check-in thành công – CheckInService gọi nội bộ. */
     public Notification notifyCheckInSuccess(Ticket ticket) {
         Objects.requireNonNull(ticket, "ticket");
         if (ticket.getBooking() == null || ticket.getBooking().getCustomer() == null) {
@@ -95,7 +100,6 @@ public class NotificationService {
         return notifyUser(ticket.getBooking().getCustomer(), message);
     }
 
-    /** Danh sách thông báo của một user (mới nhất trước). */
     public List<Notification> forUser(String userId) {
         Objects.requireNonNull(userId, "userId");
         return store.allNotifications().stream()
