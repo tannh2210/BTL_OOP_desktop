@@ -9,6 +9,7 @@ import com.nhom5.eventticket.model.CheckIn;
 import com.nhom5.eventticket.model.Customer;
 import com.nhom5.eventticket.model.Notification;
 import com.nhom5.eventticket.model.Statistics;
+import com.nhom5.eventticket.model.VIPTicket;
 import com.nhom5.eventticket.observer.NotificationListener;
 import com.nhom5.eventticket.repository.DemoData;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,8 +46,29 @@ class Person4CheckInStatsNotificationTest {
         assertEquals("SUCCESS", record.getStatus());
         assertTrue(record.getTicket().isUsed());
         assertEquals(admin.getAdminId(), record.getAdmin().getAdminId());
+        assertTrue(record.getTicket() instanceof VIPTicket);
+        assertTrue(record.getTicket().getBenefitSummary().contains("VIP"));
         assertTrue(app.notifications().forUser(customer.getUserId()).stream()
-                .anyMatch(n -> n.getMessage().contains(code) && n.getMessage().contains("check-in")));
+                .anyMatch(n -> n.getMessage().contains(code) && n.getMessage().toLowerCase().contains("check-in")));
+    }
+
+    @Test
+    void checkIn_acceptsLowercaseTicketCode() {
+        Booking booking = app.bookings().bookTicket(customer.getUserId(), "EV001", "T002", 1);
+        String code = booking.getTickets().get(0).getTicketCode();
+
+        CheckIn record = app.checkIns().checkIn(code.toLowerCase(), admin.getUserId());
+        assertTrue(record.getTicket().isUsed());
+    }
+
+    @Test
+    void checkIn_rejectsBeforeEventDay() {
+        Booking booking = app.bookings().bookTicket(customer.getUserId(), "EV002", "T004", 1);
+        String code = booking.getTickets().get(0).getTicketCode();
+
+        InvalidTicketException ex = assertThrows(InvalidTicketException.class,
+                () -> app.checkIns().checkIn(code, admin.getUserId()));
+        assertTrue(ex.getMessage().contains("Chưa tới ngày diễn ra"));
     }
 
     @Test
@@ -81,13 +103,18 @@ class Person4CheckInStatsNotificationTest {
     }
 
     @Test
-    void statistics_areReadOnlyAggregates() {
+    void statistics_separateConfirmedAndCancelled() {
         app.bookings().bookTicket(customer.getUserId(), "EV001", "T001", 2);
+        Booking toCancel = app.bookings().bookTicket(customer.getUserId(), "EV001", "T002", 1);
+        app.bookings().cancelBooking(customer.getUserId(), toCancel.getBookingId());
+
         Statistics stats = app.statistics().getStatistics();
 
         assertEquals(3, stats.getTotalEvents());
-        assertTrue(stats.getTotalBookings() >= 1);
-        assertTrue(stats.getTotalTickets() >= 2);
+        assertEquals(1, stats.getConfirmedBookings());
+        assertEquals(1, stats.getCancelledBookings());
+        assertEquals(2, stats.getActiveTickets());
+        assertEquals(1, stats.getCancelledTickets());
         assertEquals(0, new BigDecimal("1000000").compareTo(stats.getTotalRevenue()));
         assertEquals(0, app.statistics().countCheckedInTickets());
     }

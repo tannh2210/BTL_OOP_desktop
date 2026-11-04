@@ -34,12 +34,14 @@ public class CheckInController implements ScreenController {
             CheckIn record = context.checkIns().checkIn(ticketCodeField.getText(), admin.getUserId());
             Ticket ticket = record.getTicket();
             String typeName = ticket.getTicketType() != null ? ticket.getTicketType().getName() : "—";
+            // Chỉ hiện kết quả trên form — không bật thêm hộp thoại thành công (tránh báo trùng).
             resultLabel.setText("Check-in thành công.\n"
                     + "Mã vé: " + ticket.getTicketCode() + "\n"
                     + "Loại: " + typeName + "\n"
+                    + "Quyền lợi: " + ticket.getBenefitSummary() + "\n"
                     + "Khách: " + ticket.getBooking().getCustomer().getFullName() + "\n"
                     + "Sự kiện: " + ticket.getBooking().getEvent().getName());
-            UiAlerts.success("Vé " + ticket.getTicketCode() + " đã check-in.");
+            ticketCodeField.clear();
         } catch (RuntimeException ex) {
             resultLabel.setText(ex.getMessage());
             UiAlerts.error("Check-in thất bại", ex);

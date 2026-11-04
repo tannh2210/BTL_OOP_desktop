@@ -22,29 +22,53 @@ public class StatisticsService {
     }
 
     /**
-     * Tổng hợp số sự kiện, booking, vé và doanh thu từ booking CONFIRMED.
-     * (Stream – Chapter 7.5)
+     * Tách booking/vé còn hiệu lực và đã hủy; doanh thu chỉ từ booking CONFIRMED.
      */
     public Statistics getStatistics() {
         int totalEvents = store.allEvents().size();
-        int totalBookings = store.allBookings().size();
-        int totalTickets = store.allTickets().size();
 
-        BigDecimal totalRevenue = store.allBookings().stream()
-                .filter(b -> "CONFIRMED".equals(b.getStatus()))
-                .map(Booking::getTotalAmount)
-                .filter(Objects::nonNull)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        int confirmedBookings = 0;
+        int cancelledBookings = 0;
+        BigDecimal totalRevenue = BigDecimal.ZERO;
+        for (Booking booking : store.allBookings()) {
+            if ("CONFIRMED".equals(booking.getStatus())) {
+                confirmedBookings++;
+                if (booking.getTotalAmount() != null) {
+                    totalRevenue = totalRevenue.add(booking.getTotalAmount());
+                }
+            } else if ("CANCELLED".equals(booking.getStatus())) {
+                cancelledBookings++;
+            }
+        }
 
-        return new Statistics(totalEvents, totalBookings, totalTickets, totalRevenue);
+        int activeTickets = 0;
+        int usedTickets = 0;
+        int cancelledTickets = 0;
+        for (Ticket ticket : store.allTickets()) {
+            if (ticket.isUsed()) {
+                usedTickets++;
+            } else if ("CANCELLED".equals(ticket.getStatus())) {
+                cancelledTickets++;
+            } else {
+                activeTickets++;
+            }
+        }
+
+        return new Statistics(
+                totalEvents,
+                confirmedBookings,
+                cancelledBookings,
+                activeTickets,
+                usedTickets,
+                cancelledTickets,
+                totalRevenue
+        );
     }
 
-    /** Số vé đã check-in (chỉ đọc, phục vụ UI mở rộng nếu cần). */
     public long countCheckedInTickets() {
         return store.allTickets().stream().filter(Ticket::isUsed).count();
     }
 
-    /** Số booking còn hiệu lực CONFIRMED (chỉ đọc). */
     public long countConfirmedBookings() {
         return store.allBookings().stream()
                 .filter(b -> "CONFIRMED".equals(b.getStatus()))

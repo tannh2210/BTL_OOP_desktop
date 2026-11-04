@@ -15,6 +15,8 @@ public class StatisticsController implements ScreenController {
     @FXML private Label bookings;
     @FXML private Label tickets;
     @FXML private Label revenue;
+    @FXML private Label bookingDetail;
+    @FXML private Label ticketDetail;
 
     @Override
     public void init(AppContext context, Navigator navigator) {
@@ -23,14 +25,25 @@ public class StatisticsController implements ScreenController {
             bookings.setText("–");
             tickets.setText("–");
             revenue.setText("Đăng nhập tài khoản quản trị để xem thống kê.");
+            if (bookingDetail != null) bookingDetail.setText("");
+            if (ticketDetail != null) ticketDetail.setText("");
             return;
         }
         Statistics stats = context.statistics().getStatistics();
         events.setText(String.valueOf(stats.getTotalEvents()));
-        bookings.setText(String.valueOf(stats.getTotalBookings()));
-        tickets.setText(String.valueOf(stats.getTotalTickets()));
+        // Ô chính: số còn hiệu lực (không trộn đã hủy)
+        bookings.setText(String.valueOf(stats.getConfirmedBookings()));
+        tickets.setText(String.valueOf(stats.getActiveTickets() + stats.getUsedTickets()));
+        if (bookingDetail != null) {
+            bookingDetail.setText("Còn hiệu lực: " + stats.getConfirmedBookings()
+                    + "  ·  Đã hủy: " + stats.getCancelledBookings());
+        }
+        if (ticketDetail != null) {
+            ticketDetail.setText("Còn dùng được: " + stats.getActiveTickets()
+                    + "  ·  Đã check-in: " + stats.getUsedTickets()
+                    + "  ·  Đã hủy: " + stats.getCancelledTickets());
+        }
         NumberFormat money = NumberFormat.getInstance(Locale.forLanguageTag("vi-VN"));
-        revenue.setText(money.format(stats.getTotalRevenue()) + " VND"
-                + "  ·  Đã check-in: " + context.statistics().countCheckedInTickets());
+        revenue.setText(money.format(stats.getTotalRevenue()) + " VND");
     }
 }
