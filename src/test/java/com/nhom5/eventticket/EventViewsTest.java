@@ -19,6 +19,31 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.jupiter.api.Assertions.*;
 
 class EventViewsTest {
+    @Test void realApplicationLoginWorksWithJavaFxOnModulePath() throws Exception {
+        var modulePath = java.util.stream.Stream.of(Platform.class, Button.class,
+                        FXMLLoader.class, javafx.collections.ObservableList.class)
+                .map(type -> {
+                    try { return java.nio.file.Path.of(type.getProtectionDomain().getCodeSource().getLocation().toURI()).toString(); }
+                    catch (Exception error) { throw new IllegalStateException(error); }
+                }).distinct().collect(java.util.stream.Collectors.joining(java.io.File.pathSeparator));
+        for (String role : new String[]{"admin", "customer"}) {
+            var log = java.nio.file.Path.of("target", "login-runtime-" + role + ".log");
+            Process process = new ProcessBuilder(
+                    java.nio.file.Path.of(System.getProperty("java.home"), "bin", "java.exe").toString(),
+                    "--module-path", modulePath, "--add-modules", "javafx.controls,javafx.fxml",
+                    "-cp", java.nio.file.Path.of("target/test-classes").toAbsolutePath()
+                            + java.io.File.pathSeparator + java.nio.file.Path.of("target/classes").toAbsolutePath(),
+                    LoginRuntimeProbe.class.getName(), role)
+                    .redirectErrorStream(true).redirectOutput(log.toFile()).start();
+            try {
+                assertTrue(process.waitFor(30, TimeUnit.SECONDS), "Runtime timed out: " + role);
+                String output = java.nio.file.Files.readString(log);
+                assertEquals(0, process.exitValue(), output);
+                assertTrue(output.contains("PASS module-path login/dashboard/events/resize/logout: " + role), output);
+            } finally { if (process.isAlive()) process.destroyForcibly(); }
+        }
+    }
+
     @BeforeAll static void startJavaFx() throws Exception {
         CountDownLatch ready = new CountDownLatch(1);
         Platform.startup(() -> { Platform.setImplicitExit(false); ready.countDown(); });
@@ -53,7 +78,8 @@ class EventViewsTest {
             context.loginAs(context.auth().login("customer", "123456"));
             Parent root = load("EventsView.fxml", context);
             Label detail = (Label) root.lookup("#eventDetail");
-            assertTrue(detail.getText().contains("22:00"));
+            assertTrue(detail.getText().contains(context.events().getEventById("EV001").getEndTime()
+                    .format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))));
             assertEquals(3, ((ListView<?>) root.lookup("#ticketTypesList")).getItems().size());
             ((TextField) root.lookup("#searchField")).setText("no such event");
             assertEquals(0, ((TableView<?>) root.lookup("#eventTable")).getItems().size());
@@ -64,11 +90,118 @@ class EventViewsTest {
     }
 
     private Parent load(String file, AppContext context) throws Exception {
+        if ("BookingView.fxml".equals(file)) {
+            FXMLLoader shellLoader = new FXMLLoader(getClass().getResource("/fxml/Shell.fxml"));
+            Parent shell = shellLoader.load();
+            ((com.nhom5.eventticket.ui.ShellController) shellLoader.getController()).setContext(context, () -> {});
+            ((Button) shell.lookup("#bookingsButton")).fire();
+            Parent view = (Parent) ((javafx.scene.layout.StackPane) shell.lookup("#contentArea")).getChildren().get(0);
+            return view instanceof ScrollPane scroll ? (Parent) scroll.getContent() : view;
+        }
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/" + file));
         Parent root = loader.load();
         ((ScreenController) loader.getController()).init(context, null);
         // ScrollPane content is available through its content property before skin creation.
         return root instanceof ScrollPane scroll ? (Parent) scroll.getContent() : root;
+    }
+
+    @Test void eventTablesFillViewportAndKeepProportionsOnResize() throws Exception {
+        onFx(() -> {
+            String[] files = {"EventsView.fxml", "ManageEventsView.fxml"};
+            double[][] ratios = {{.10, .25, .20, .20, .25}, {.12, .30, .28, .30}};
+            for (int view = 0; view < files.length; view++) {
+                AppContext context = new AppContext(DemoData.create());
+                context.loginAs(context.auth().login(view == 0 ? "customer" : "admin", "123456"));
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/" + files[view]));
+                Parent root = loader.load();
+                ((ScreenController) loader.getController()).init(context, null);
+                javafx.stage.Stage stage = new javafx.stage.Stage();
+                try {
+                    stage.setScene(new javafx.scene.Scene(root, 1000, 760));
+                    stage.getScene().getStylesheets().add(getClass().getResource("/css/app.css").toExternalForm());
+                    stage.show();
+                    root.applyCss(); root.layout();
+                    @SuppressWarnings("unchecked") TableView<Event> table = (TableView<Event>) root.lookup("#eventTable");
+                    assertEquals(ratios[view].length, table.getColumns().size());
+                    assertEquals(table.getColumns(), table.getVisibleLeafColumns());
+                    assertInstanceOf(javafx.scene.control.ConstrainedColumnResizeBase.class, table.getColumnResizePolicy());
+                    var data = java.util.List.copyOf(table.getItems());
+                    // Exercise both an empty table and a full table with a vertical scrollbar.
+                    for (int rows : new int[]{0, 60}) {
+                        table.setItems(javafx.collections.FXCollections.observableArrayList());
+                        for (int row = 0; row < rows; row++) table.getItems().add(data.get(row % data.size()));
+                        for (int width : new int[]{700, 1000, 1400, 850}) {
+                            stage.setWidth(width);
+                            root.applyCss(); root.layout(); table.layout();
+                            assertEventHeaders(table);
+                            if (rows > 0) {
+                                table.getSelectionModel().selectFirst();
+                                table.getSortOrder().setAll(java.util.List.of(table.getColumns().get(1)));
+                                table.getColumns().get(1).setSortType(TableColumn.SortType.DESCENDING);
+                                table.sort();
+                                root.applyCss(); root.layout();
+                                assertEventHeaders(table);
+                            }
+                            double contentWidth = new TableView.ResizeFeatures<>(table, null, 0.0).getContentWidth();
+                            double sum = 0;
+                            for (int col = 0; col < table.getColumns().size(); col++) {
+                                TableColumn<Event, ?> column = table.getColumns().get(col);
+                                assertFalse(column.getText().isBlank());
+                                assertNotNull(column.getCellValueFactory());
+                                assertEquals(contentWidth * ratios[view][col], column.getWidth(), 1.1);
+                                sum += column.getWidth();
+                            }
+                            assertEquals(contentWidth, sum, 1.1, "No unused trailing column space");
+                            assertTrue(table.lookupAll(".scroll-bar").stream()
+                                    .map(n -> (ScrollBar) n)
+                                    .noneMatch(bar -> bar.getOrientation() == javafx.geometry.Orientation.HORIZONTAL && bar.isVisible()));
+                            if (view == 0 && rows > 0) {
+                                for (var node : table.lookupAll(".table-cell")) {
+                                    if (node instanceof TableCell<?, ?> cell && !cell.isEmpty()
+                                            && cell.getTableColumn() == table.getColumns().get(4)) {
+                                        javafx.scene.text.Text text = new javafx.scene.text.Text(cell.getText());
+                                        text.setFont(cell.getFont());
+                                        assertTrue(text.getLayoutBounds().getWidth() + cell.getInsets().getLeft()
+                                                + cell.getInsets().getRight() <= cell.getWidth(), "Full sales status fits");
+                                    }
+                                }
+                            }
+                            if (rows > 0 && width == 1000) {
+                                var snapshot = root.snapshot(null, null);
+                                var png = new java.awt.image.BufferedImage((int) snapshot.getWidth(),
+                                        (int) snapshot.getHeight(), java.awt.image.BufferedImage.TYPE_INT_ARGB);
+                                for (int y = 0; y < png.getHeight(); y++) {
+                                    for (int x = 0; x < png.getWidth(); x++) {
+                                        png.setRGB(x, y, snapshot.getPixelReader().getArgb(x, y));
+                                    }
+                                }
+                                javax.imageio.ImageIO.write(png, "png", new java.io.File(
+                                        "target/event-headers-" + (view == 0 ? "customer" : "admin") + ".png"));
+                            }
+                        }
+                    }
+                } finally { stage.close(); }
+            }
+            return null;
+        });
+    }
+
+    private static void assertEventHeaders(TableView<?> table) {
+        var headers = table.lookupAll(".column-header .label");
+        assertEquals(table.getColumns().size(), headers.size());
+        for (var node : headers) {
+            Label label = (Label) node;
+            assertEquals(javafx.scene.paint.Color.web("#14263D"), label.getTextFill());
+            assertTrue(label.getFont().getStyle().toLowerCase(java.util.Locale.ROOT).contains("bold"));
+            assertTrue(label.isVisible());
+            assertTrue(label.getWidth() > 0 && label.getHeight() > 0);
+        }
+        for (var node : table.lookupAll(".column-header")) {
+            var header = (javafx.scene.layout.Region) node;
+            assertEquals(javafx.scene.paint.Color.web("#eff5fa"), header.getBackground().getFills().get(0).getFill());
+        }
+        var background = (javafx.scene.layout.Region) table.lookup(".column-header-background");
+        assertEquals(javafx.scene.paint.Color.web("#eff5fa"), background.getBackground().getFills().get(0).getFill());
     }
 
     @Test void inlineValidationRejectsZeroNegativeDecimalAndEmptyQuantity() throws Exception {
@@ -275,8 +408,9 @@ class EventViewsTest {
             ((Button) admin.lookup("#salesButton")).fire();
             context.logout(); context.loginAs(context.auth().login("customer", "123456"));
             Parent customer = load("BookingView.fxml", context);
-            assertEquals("Đã đóng bán vé", ((Label) customer.lookup("#availabilityLabel")).getText());
-            assertTrue(((Button) customer.lookup("#placeBookingButton")).isDisabled());
+            // The current booking UI filters closed events out of the choices.
+            assertTrue(((ComboBox<?>) customer.lookup("#eventBox")).getItems().stream()
+                    .map(Event.class::cast).noneMatch(e -> "EV001".equals(e.getEventId())));
             assertThrows(IllegalArgumentException.class, () -> context.bookings().bookTicket("U1", "EV001", "T001", 1));
             context.logout(); context.loginAs(context.auth().login("admin", "123456"));
             admin = load("ManageEventsView.fxml", context);

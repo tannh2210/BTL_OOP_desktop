@@ -56,6 +56,11 @@ public class ManageEventController implements ScreenController {
     private ObservableList<Event> eventData;
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
+    @FXML
+    private void initialize() {
+        eventTable.setColumnResizePolicy(new ProportionalTableResizePolicy(.12, .30, .28, .30));
+    }
+
     @Override
     public void init(AppContext context, Navigator navigator) {
         this.context = context;
