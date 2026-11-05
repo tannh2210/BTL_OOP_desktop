@@ -5,6 +5,7 @@ import com.nhom5.eventticket.model.*;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 
 import java.math.BigDecimal;
@@ -25,6 +26,7 @@ public class BookingController implements ScreenController {
     @FXML private Label policyLabel;
     @FXML private Button cancelButton;
     @FXML private HBox bookingActions;
+    @FXML private VBox bookingForm;
     @FXML private ListView<String> bookingList;
     @FXML private Button placeBookingButton;
 
@@ -86,18 +88,8 @@ public class BookingController implements ScreenController {
             formHeading.setText("Quản lý booking toàn hệ thống");
             historyHeading.setText("Danh sách booking");
             policyLabel.setText("Lọc theo sự kiện. Chỉ booking CONFIRMED có thể hủy trước giờ bắt đầu; booking có vé đã check-in không thể hủy.");
-            bookingActions.setVisible(false);
-            bookingActions.setManaged(false);
-            eventBox.setVisible(false);
-            eventBox.setManaged(false);
-            typeBox.setVisible(false);
-            typeBox.setManaged(false);
-            quantitySpinner.setVisible(false);
-            quantitySpinner.setManaged(false);
-            availabilityLabel.setVisible(false);
-            availabilityLabel.setManaged(false);
-            totalLabel.setVisible(false);
-            totalLabel.setManaged(false);
+            bookingForm.setVisible(false);
+            bookingForm.setManaged(false);
             cancelButton.setText("Hủy booking đã chọn");
         } else {
             formHeading.setText("Thông tin đặt vé");
