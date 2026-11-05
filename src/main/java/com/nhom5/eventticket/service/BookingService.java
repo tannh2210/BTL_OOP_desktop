@@ -26,7 +26,7 @@ public class BookingService {
             User user = store.findUser(customerId).orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài khoản."));
             if (!(user instanceof Customer customer)) throw new IllegalArgumentException("Cần tài khoản khách hàng để đặt vé.");
             Event event = store.findEvent(eventId).orElseThrow(() -> new IllegalArgumentException("Sự kiện không tồn tại."));
-            if (!"OPEN".equals(event.getStatus()) || !event.getStartTime().isAfter(LocalDateTime.now()))
+            if (!event.canBook())
                 throw new IllegalArgumentException("Sự kiện đã đóng đặt vé.");
             TicketType type = event.findTicketType(typeId);
             if (type == null) throw new IllegalArgumentException("Loại vé không tồn tại.");

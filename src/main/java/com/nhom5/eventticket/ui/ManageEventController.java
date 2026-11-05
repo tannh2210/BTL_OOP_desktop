@@ -10,6 +10,7 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
@@ -43,6 +44,13 @@ public class ManageEventController implements ScreenController {
     @FXML private TextField priceField;
     @FXML private TextField quantityField;
     @FXML private Label stockLabel;
+    @FXML private Label salesLabel;
+    @FXML private Label salesHint;
+    @FXML private Label priceError;
+    @FXML private Label quantityError;
+    @FXML private Button salesButton;
+    @FXML private Button ticketSalesButton;
+    @FXML private Button deleteTicketButton;
 
     private AppContext context;
     private ObservableList<Event> eventData;
@@ -51,6 +59,8 @@ public class ManageEventController implements ScreenController {
     @Override
     public void init(AppContext context, Navigator navigator) {
         this.context = context;
+        priceField.textProperty().addListener((o, a, b) -> validatePrice());
+        quantityField.textProperty().addListener((o, a, b) -> validateQuantity());
         eventIdCol.setCellValueFactory(d -> new ReadOnlyStringWrapper(d.getValue().getEventId()));
         eventNameCol.setCellValueFactory(d -> new ReadOnlyStringWrapper(d.getValue().getName()));
         locationCol.setCellValueFactory(d -> new ReadOnlyStringWrapper(d.getValue().getLocation()));
@@ -74,7 +84,8 @@ public class ManageEventController implements ScreenController {
                     return;
                 }
                 setText(type.getName() + "  •  " + type.getPrice().toPlainString()
-                        + " VND  •  Còn " + type.getAvailableQuantity() + "/" + type.getQuantity());
+                        + " VND  •  Còn " + type.getAvailableQuantity() + "/" + type.getQuantity()
+                        + " • " + type.getSalesLabel());
             }
         });
         eventTable.getSelectionModel().selectedItemProperty().addListener((obs, oldV, value) -> showEvent(value));
@@ -169,6 +180,15 @@ public class ManageEventController implements ScreenController {
     }
 
     private void showEvent(Event event) {
+        salesLabel.setText(event == null ? "Chưa chọn sự kiện"
+                : event.isTicketSalesOpen() ? "Đang mở bán" : "Đã đóng bán");
+        salesHint.setText(event == null ? ""
+                : !event.isTicketSalesOpen() ? "Khách hàng không thể đặt vé. Trạng thái bật bán riêng của từng loại vé được giữ nguyên."
+                : !event.canBook() ? "Khách hàng không thể đặt vé: sự kiện đã bắt đầu hoặc không còn hợp lệ."
+                : "Khách hàng chỉ đặt được loại vé đang bật bán riêng và còn đủ tồn kho.");
+        salesButton.setText(event != null && event.isTicketSalesOpen() ? "Đóng bán vé" : "Mở bán vé");
+        salesButton.setDisable(event == null || (!event.isTicketSalesOpen()
+                && (!"OPEN".equals(event.getStatus()) || !event.getStartTime().isAfter(java.time.LocalDateTime.now()))));
         ticketList.getItems().clear();
         if (event == null) {
             nameField.clear(); descriptionField.clear(); locationField.clear();
@@ -191,6 +211,9 @@ public class ManageEventController implements ScreenController {
     }
 
     private void showTicketType(TicketType type) {
+        ticketSalesButton.setText(type != null && type.isSalesEnabled() ? "Ngừng bán loại vé" : "Mở bán loại vé");
+        ticketSalesButton.setDisable(type == null);
+        deleteTicketButton.setDisable(type == null);
         if (type == null) {
             priceField.clear(); quantityField.clear(); typeBox.setValue("STANDARD");
             stockLabel.setText("");
@@ -204,6 +227,7 @@ public class ManageEventController implements ScreenController {
     }
 
     private void reload(String eventId) {
+        TicketType selectedType = ticketList.getSelectionModel().getSelectedItem();
         eventData.setAll(context.events().searchEvents(searchField.getText()));
         if (eventId == null) {
             if (!eventData.isEmpty()) eventTable.getSelectionModel().selectFirst();
@@ -214,6 +238,9 @@ public class ManageEventController implements ScreenController {
                 .ifPresent(event -> eventTable.getSelectionModel().select(event));
         eventTable.refresh();
         showEvent(eventTable.getSelectionModel().getSelectedItem());
+        if (selectedType != null) ticketList.getItems().stream()
+                .filter(t -> t.getTicketTypeId().equals(selectedType.getTicketTypeId())).findFirst()
+                .ifPresent(t -> ticketList.getSelectionModel().select(t));
     }
 
     @FXML private void newEvent() {
@@ -245,17 +272,60 @@ public class ManageEventController implements ScreenController {
 
     private static BigDecimal money(String text) {
         try {
-            return new BigDecimal(text.trim());
+            BigDecimal value = new BigDecimal(text.trim());
+            if (value.signum() <= 0) throw new IllegalArgumentException();
+            return value;
         } catch (RuntimeException ex) {
-            throw new IllegalArgumentException("Giá vé không hợp lệ.");
+            throw new IllegalArgumentException("Giá vé phải lớn hơn 0.");
         }
     }
 
     private static int count(String text) {
         try {
-            return Integer.parseInt(text.trim());
+            int value = Integer.parseInt(text.trim());
+            if (value <= 0) throw new IllegalArgumentException();
+            return value;
         } catch (RuntimeException ex) {
-            throw new IllegalArgumentException("Số lượng vé không hợp lệ.");
+            throw new IllegalArgumentException("Số lượng vé phải là số nguyên lớn hơn 0.");
         }
+    }
+
+    private void validatePrice() {
+        try { money(priceField.getText()); priceError.setText(""); }
+        catch (IllegalArgumentException ex) { priceError.setText(ex.getMessage()); }
+    }
+    private void validateQuantity() {
+        try { count(quantityField.getText()); quantityError.setText(""); }
+        catch (IllegalArgumentException ex) { quantityError.setText(ex.getMessage()); }
+    }
+    @FXML private void toggleSales() {
+        Admin admin = requireAdmin();
+        Event event = selectedEvent();
+        if (admin == null || event == null) return;
+        try {
+            context.events().setTicketSalesOpen(admin, event.getEventId(), !event.isTicketSalesOpen());
+            reload(event.getEventId());
+        } catch (RuntimeException ex) { UiAlerts.error("Không thể đổi trạng thái bán vé", ex); }
+    }
+    @FXML private void deleteTicketType() { changeTicketSales(true); }
+    @FXML private void toggleTicketSales() { changeTicketSales(false); }
+    private void changeTicketSales(boolean delete) {
+        Admin admin = requireAdmin();
+        Event event = selectedEvent();
+        TicketType type = ticketList.getSelectionModel().getSelectedItem();
+        if (admin == null || event == null) return;
+        if (type == null) {
+            UiAlerts.error("Chưa chọn loại vé", new IllegalArgumentException("Hãy chọn loại vé."));
+            return;
+        }
+        String action = delete ? "Xóa loại vé" : type.isSalesEnabled() ? "Ngừng bán loại vé" : "Mở bán loại vé";
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION, action + " " + type.getName() + "?", ButtonType.OK, ButtonType.CANCEL);
+        confirm.setHeaderText(action);
+        if (confirm.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK) return;
+        try {
+            if (delete) context.events().deleteTicketType(admin, event.getEventId(), type.getTicketTypeId());
+            else context.events().setTicketTypeSalesEnabled(admin, event.getEventId(), type.getTicketTypeId(), !type.isSalesEnabled());
+            reload(event.getEventId());
+        } catch (RuntimeException ex) { UiAlerts.error("Không thể " + action.toLowerCase(), ex); }
     }
 }

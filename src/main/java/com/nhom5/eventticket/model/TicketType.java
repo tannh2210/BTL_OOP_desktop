@@ -9,9 +9,21 @@ public class TicketType {
     private int quantity;
     private int availableQuantity;
     private Event owner;
+    private boolean salesEnabled = true;
+    public boolean isSalesEnabled() { return salesEnabled; }
+    /** Per-type switch is independent; actual sales also depend on the owning event. */
+    public String getSalesLabel() {
+        if (!salesEnabled) return "Đã ngừng bán riêng • Không thể đặt vé";
+        if (owner != null && !owner.isTicketSalesOpen())
+            return "Bật bán riêng • Không thể đặt: sự kiện đã đóng bán";
+        if (owner != null && !owner.canBook())
+            return "Bật bán riêng • Không thể đặt: sự kiện không còn nhận đặt vé";
+        if (availableQuantity == 0) return "Bật bán riêng • Hết vé";
+        return "Bật bán riêng • Có thể đặt vé";
+    }
+    public void setSalesEnabled(boolean enabled) { salesEnabled = enabled; }
     public TicketType(String ticketTypeId, String name, BigDecimal price, int quantity) {
-        if (quantity < 0) throw new IllegalArgumentException("quantity must be >= 0");
-        if (price == null || price.signum() < 0) throw new IllegalArgumentException("price must be >= 0");
+        validateStock(price, quantity);
         if (ticketTypeId == null || ticketTypeId.isBlank()) throw new IllegalArgumentException("Mã loại vé không được trống.");
         this.ticketTypeId = ticketTypeId;
         this.name = normalizeName(name);
@@ -47,24 +59,25 @@ public class TicketType {
         return count <= availableQuantity;
     }
     public void checkAvailability(int count) {
+        if (!salesEnabled) throw new IllegalArgumentException("Loại vé đã ngừng bán.");
         if (!hasAvailableQuantity(count))
             throw new com.nhom5.eventticket.exception.OutOfStockException("Số lượng vé đặt vượt quá số vé còn lại.");
     }
     public BigDecimal getPrice() { return price; }
     public void setPrice(BigDecimal price) {
-        if (price == null || price.signum() < 0) throw new IllegalArgumentException("price must be >= 0");
+        validateStock(price, quantity);
         this.price = price;
     }
     public int getQuantity() { return quantity; }
     public int getAvailableQuantity() { return availableQuantity; }
-    public boolean isAvailable() { return availableQuantity > 0; }
+    public boolean isAvailable() { return salesEnabled && availableQuantity > 0; }
     /** @deprecated Use EventService.updateTicketType with explicit price and total quantity. */
     @Deprecated
     public void updateQuantity() { throw new UnsupportedOperationException("Dùng EventService.updateTicketType"); }
 
     public void changeStock(BigDecimal newPrice, int newQuantity) {
         int sold = quantity - availableQuantity;
-        if (newPrice == null || newPrice.signum() < 0) throw new IllegalArgumentException("Giá vé không hợp lệ.");
+        validateStock(newPrice, newQuantity);
         if (newQuantity < sold) throw new IllegalArgumentException("Số lượng không được nhỏ hơn số vé đã đặt (" + sold + ").");
         this.price = newPrice;
         this.quantity = newQuantity;
@@ -73,9 +86,14 @@ public class TicketType {
 
     /** Shared stock operations: BookingService must call these inside synchronized(store). */
     public void reserve(int count) {
+        checkAvailability(count);
         if (count <= 0) throw new IllegalArgumentException("count must be > 0");
         if (count > availableQuantity) throw new com.nhom5.eventticket.exception.OutOfStockException("Số lượng vé đặt vượt quá số vé còn lại.");
         availableQuantity -= count;
+    }
+    private static void validateStock(BigDecimal price, int quantity) {
+        if (quantity <= 0) throw new IllegalArgumentException("Số lượng vé phải là số nguyên lớn hơn 0.");
+        if (price == null || price.signum() <= 0) throw new IllegalArgumentException("Giá vé phải lớn hơn 0; chưa hỗ trợ vé miễn phí.");
     }
     public void restore(int count) {
         if (count <= 0 || count > quantity - availableQuantity)

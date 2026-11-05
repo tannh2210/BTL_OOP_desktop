@@ -18,8 +18,10 @@
       <Separator />
       <HBox alignment="CENTER_LEFT" spacing="12"><Label text="Tạm tính" styleClass="panel-title"/>
       <Region HBox.hgrow="ALWAYS"/><Label fx:id="totalLabel" text="0 VND" styleClass="price-label"/></HBox>
-      <HBox fx:id="bookingActions" spacing="10"><Button text="Xác nhận đặt vé" onAction="#placeBooking" styleClass="primary-button"/>
-      <Button text="Làm mới" onAction="#viewHistory" styleClass="secondary-button"/></HBox>
+      <HBox fx:id="bookingActions" spacing="10">
+        <Button fx:id="placeBookingButton" text="Xác nhận đặt vé" onAction="#placeBooking" styleClass="primary-button"/>
+        <Button text="Làm mới" onAction="#viewHistory" styleClass="secondary-button"/>
+      </HBox>
     </VBox>
     <VBox spacing="12" styleClass="panel">
       <Label fx:id="historyHeading" text="Lịch sử đặt vé" styleClass="panel-title" />

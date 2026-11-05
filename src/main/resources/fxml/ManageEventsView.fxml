@@ -23,6 +23,9 @@
     </TableView>
     <VBox spacing="10" styleClass="panel">
       <Label text="Thông tin sự kiện" styleClass="panel-title"/>
+      <Label fx:id="salesLabel"/>
+      <Label fx:id="salesHint" wrapText="true" styleClass="hint-label"/>
+      <Button fx:id="salesButton" text="Mở bán vé" onAction="#toggleSales" styleClass="secondary-button"/>
       <Label text="Tên sự kiện" styleClass="input-label"/>
       <TextField fx:id="nameField" promptText="Tên sự kiện"/>
       <Label text="Mô tả" styleClass="input-label"/>
@@ -50,12 +53,18 @@
       <ComboBox fx:id="typeBox" maxWidth="Infinity"/>
       <Label text="Giá vé (VND)" styleClass="input-label"/>
       <TextField fx:id="priceField" promptText="Ví dụ: 150000"/>
+      <Label fx:id="priceError" style="-fx-text-fill: #c62828;" wrapText="true"/>
       <Label text="Tổng số lượng vé (bao gồm vé đã đặt)" styleClass="input-label"/>
       <TextField fx:id="quantityField" promptText="Ví dụ: 100"/>
+      <Label fx:id="quantityError" style="-fx-text-fill: #c62828;" wrapText="true"/>
       <Label fx:id="stockLabel" text="" styleClass="hint-label"/>
       <HBox spacing="10">
         <Button text="Thêm loại vé" onAction="#addTicketType" styleClass="primary-button"/>
         <Button text="Cập nhật loại vé" onAction="#updateTicketType" styleClass="secondary-button"/>
+      </HBox>
+      <HBox spacing="10">
+        <Button fx:id="deleteTicketButton" text="Xóa loại vé" onAction="#deleteTicketType" styleClass="secondary-button"/>
+        <Button fx:id="ticketSalesButton" text="Ngừng bán loại vé" onAction="#toggleTicketSales" styleClass="secondary-button"/>
       </HBox>
     </VBox>
   </VBox>

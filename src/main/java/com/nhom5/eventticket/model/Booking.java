@@ -44,6 +44,8 @@ public class Booking {
     }
     public void confirmBooking() {
         if (!"PENDING".equals(status) || tickets.isEmpty()) throw new IllegalStateException("Booking cannot be confirmed");
+        if (!event.canBook() || tickets.stream().anyMatch(t -> !t.getTicketType().isSalesEnabled()))
+            throw new IllegalStateException("Sự kiện hoặc loại vé đã đóng bán.");
         totalAmount = calculateTotal();
         status = "CONFIRMED";
     }
