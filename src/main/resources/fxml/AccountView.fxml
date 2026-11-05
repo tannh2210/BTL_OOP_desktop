@@ -11,10 +11,27 @@
      <Label text="Phiên đăng nhập hiện tại của bạn." styleClass="muted-label" />
    </VBox>
    <VBox spacing="12" styleClass="panel" maxWidth="520">
-      <Label fx:id="currentUserLabel" text="" styleClass="panel-title" wrapText="true" />
+      <Label text="Họ và tên" styleClass="input-label" />
+      <TextField fx:id="fullNameField" promptText="Họ và tên" />
+      <Label text="Tên đăng nhập" styleClass="input-label" />
+      <Label fx:id="usernameLabel" text="" styleClass="muted-label" />
       <Label fx:id="roleLabel" text="" styleClass="muted-label" />
-      <Label fx:id="emailLabel" text="" styleClass="muted-label" />
-      <Button text="Đăng xuất" onAction="#logout" styleClass="secondary-button" />
+      <Label text="Email" styleClass="input-label" />
+      <TextField fx:id="emailField" promptText="Email" />
+      <Label fx:id="profileStatusLabel" text="" wrapText="true" />
+      <Button fx:id="saveButton" text="Lưu thay đổi" onAction="#saveProfile" styleClass="primary-button" />
    </VBox>
+   <VBox spacing="12" styleClass="panel" maxWidth="520">
+      <Label text="Đổi mật khẩu" styleClass="panel-title" />
+      <Label text="Mật khẩu hiện tại" styleClass="input-label" />
+      <PasswordField fx:id="currentPasswordField" promptText="Mật khẩu hiện tại" onAction="#changePassword" />
+      <Label text="Mật khẩu mới" styleClass="input-label" />
+      <PasswordField fx:id="newPasswordField" promptText="Mật khẩu mới (ít nhất 6 ký tự)" onAction="#changePassword" />
+      <Label text="Xác nhận mật khẩu mới" styleClass="input-label" />
+      <PasswordField fx:id="confirmNewPasswordField" promptText="Nhập lại mật khẩu mới" onAction="#changePassword" />
+      <Label fx:id="passwordStatusLabel" text="" wrapText="true" />
+      <Button fx:id="changePasswordButton" text="Đổi mật khẩu" onAction="#changePassword" styleClass="primary-button" />
+   </VBox>
+   <Button text="Đăng xuất" onAction="#logout" styleClass="secondary-button" maxWidth="520" />
  </VBox></content>
 </ScrollPane>

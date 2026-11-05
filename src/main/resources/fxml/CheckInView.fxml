@@ -7,7 +7,7 @@
  <content><VBox spacing="18" styleClass="view">
   <VBox spacing="5"><Label text="CHECK-IN" styleClass="section-label"/>
     <Label text="Kiểm tra vé tham dự" styleClass="heading"/>
-    <Label text="Nhập mã vé của khách để xác nhận khi đến sự kiện." styleClass="muted-label"/>
+    <Label text="Chỉ check-in trong ngày diễn ra sự kiện. Mã vé không phân biệt hoa/thường." styleClass="muted-label" wrapText="true"/>
   </VBox>
   <VBox spacing="14" styleClass="panel">
     <Label text="Mã vé" styleClass="input-label"/>

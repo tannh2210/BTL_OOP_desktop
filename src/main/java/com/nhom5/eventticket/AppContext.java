@@ -19,10 +19,11 @@ public final class AppContext {
         this.store = java.util.Objects.requireNonNull(store);
         auth = new AuthService(store);
         events = new EventService(store);
-        bookings = new BookingService(store, new TicketFactory());
-        checkIns = new CheckInService(store);
-        statistics = new StatisticsService(store);
+        // Notification dùng chung phải tạo trước để Booking/CheckIn gọi API thống nhất.
         notifications = new NotificationService(store);
+        bookings = new BookingService(store, new TicketFactory(), notifications);
+        checkIns = new CheckInService(store, notifications);
+        statistics = new StatisticsService(store);
     }
     public InMemoryStore store() { return store; }
     public AuthService auth() { return auth; }

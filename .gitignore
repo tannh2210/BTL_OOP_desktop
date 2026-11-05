@@ -1,11 +1,6 @@
-/target/
-/.tools/
-/.idea/
-/.vscode/*.log
+target/
+.idea/
 *.iml
-*.class
-*.log
-*.db
-*.sqlite
-*.sqlite3
-.DS_Store
+.classpath
+.project
+.settings/
