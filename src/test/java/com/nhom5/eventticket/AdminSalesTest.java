@@ -20,7 +20,7 @@ class AdminSalesTest {
     TicketType type;
     @BeforeEach void setup() {
         store = DemoData.create(); events = new EventService(store);
-        bookings = new BookingService(store, new TicketFactory());
+        bookings = new BookingService(store, new TicketFactory(), new NotificationService(store));
         admin = (Admin) store.findUser("U2").orElseThrow();
         event = events.createEventWithTicket(admin, "Test", "", "Place", LocalDateTime.now().plusDays(2),
                 "STANDARD", BigDecimal.TEN, 5);
@@ -128,7 +128,9 @@ class AdminSalesTest {
         events.setTicketTypeSalesEnabled(admin, event.getEventId(), type.getTicketTypeId(), false);
         bookings.bookTicket("U1", event.getEventId(), vip.getTicketTypeId(), 1);
         events.setTicketSalesOpen(admin, event.getEventId(), false);
-        new CheckInService(store).checkIn(existing.getTickets().get(0).getTicketCode(), admin.getUserId());
+        // Check-in now requires the event to have reached its opening day.
+        event.reschedule(LocalDateTime.now().minusMinutes(1), LocalDateTime.now().plusHours(2));
+        new CheckInService(store, new NotificationService(store)).checkIn(existing.getTickets().get(0).getTicketCode(), admin.getUserId());
         assertTrue(existing.getTickets().get(0).isUsed());
         assertEquals(1, vip.getAvailableQuantity());
     }
